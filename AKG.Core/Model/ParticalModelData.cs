@@ -1,6 +1,6 @@
-namespace ACG.Model;
+namespace AKG.Core.Model;
 
-public class PartialModelData
+public class ParticalModelData
 {
     public List<System.Numerics.Vector4> Vertices { get; } = new();
     public List<FaceIndices[]> Faces { get; } = new();

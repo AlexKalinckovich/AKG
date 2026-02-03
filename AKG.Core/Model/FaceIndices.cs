@@ -1,4 +1,4 @@
-namespace ACG.Model;
+namespace AKG.Core.Model;
 
 public struct FaceIndices
 {

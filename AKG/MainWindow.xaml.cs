@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ACG.Model;
+using AKG.Core.Model;
 using AKG.Facade;
 
 namespace AKG;
@@ -200,15 +201,7 @@ public partial class MainWindow : Window
     {
         _currentObjModel.Clear();
         
-        await _objParserFacade.ParseObjModelFromFileAsync(
-            onProgress: () =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    _renderer.ForceModelAdjustment();
-                });
-            },
-            onComplete: () =>
+        await _objParserFacade.ParseObjModelFromFileAsync(onComplete: () =>
             {
                 Dispatcher.Invoke(() =>
                 {

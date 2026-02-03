@@ -1,7 +1,11 @@
 namespace AKG.FileHelper;
 
-public readonly struct FileChunk(byte[] buffer, int count)
+public class FileChunk
 {
-    public byte[] Buffer { get; } = buffer;
-    public int Count { get; } = count;
+    public string[] Lines { get; }
+    
+    public FileChunk(string[] lines)
+    {
+        Lines = lines;
+    }
 }

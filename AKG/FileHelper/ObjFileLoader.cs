@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.IO;
 using Microsoft.Win32;
 
@@ -6,7 +5,9 @@ namespace AKG.FileHelper;
 
 public class ObjFileLoader
 {
-    public async Task<FileChunk> LoadEntireFileAsync()
+    private const int DefaultLinesPerChunk = 256;
+    
+    public async IAsyncEnumerable<string[]> LoadFileByChunksAsync(int linesPerChunk = DefaultLinesPerChunk)
     {
         string? filePath = GetFilePathFromUser();
         if (filePath is null)
@@ -14,15 +15,33 @@ public class ObjFileLoader
             throw new OperationCanceledException();
         }
 
-        long fileSize = new FileInfo(filePath).Length;
-       
-        byte[] buffer = ArrayPool<byte>.Shared.Rent((int)fileSize);
+        await using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
+        using StreamReader reader = new StreamReader(fileStream);
         
-        using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        var linesBuffer = new List<string>(linesPerChunk);
+        int lineCount = 0;
+
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#"))
+                continue;
+
+            linesBuffer.Add(line);
+            lineCount++;
+
+            if (lineCount >= linesPerChunk)
+            {
+                yield return linesBuffer.ToArray();
+                linesBuffer.Clear();
+                lineCount = 0;
+            }
+        }
+
         
-        int bytesRead = await fileStream.ReadAsync(buffer, 0, (int)fileSize);
-        
-        return new FileChunk(buffer, bytesRead);
+        if (linesBuffer.Count > 0)
+        {
+            yield return linesBuffer.ToArray();
+        }
     }
     
     private string? GetFilePathFromUser()

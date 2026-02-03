@@ -1,477 +1,130 @@
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using ACG.Model;
+using AKG.Core.Model;
+using AKG.View;
 
-namespace AKG;
-
-public unsafe class ObjRenderer
+namespace AKG
 {
-    private readonly ObjModel _model;
-    private readonly WriteableBitmap _bitmap;
-    private readonly int _width, _height;
-    private readonly int _stride;
-    private readonly byte* _backBuffer;
-    
-    
-    private float _rotationX = 0;
-    private float _rotationY = 0;
-    private float _zoom = 5.0f;
-    private float _offsetX = 0;
-    private float _offsetY = 0;
-    
-    
-    private List<Point> _screenPoints;
-    private Matrix4 _cachedModelMatrix;
-    private Matrix4 _cachedViewMatrix;
-    private Matrix4 _cachedProjectionMatrix;
-    private bool _matricesDirty = true;
-    
-    
-    private Vector3 _modelCenter = Vector3.Zero;
-    private float _modelScale = 1.0f;
-    private bool _needsModelAdjustment = true;
-    private int _lastVertexCount = 0;
-    
-    
-    private bool _isDragging = false;
-    private Point _lastMousePos;
-
-    public ObjRenderer(ObjModel model, WriteableBitmap bitmap)
+    public class ObjRenderer
     {
-        _model = model;
-        _bitmap = bitmap;
-        _width = bitmap.PixelWidth;
-        _height = bitmap.PixelHeight;
-        _stride = bitmap.BackBufferStride;
+        private readonly ObjModel _model;
+        private readonly WriteableBitmap _bitmap;
+        private readonly Rasterizer _rasterizer;
+        private readonly Camera _camera;
         
+        // Состояние мыши для вращения
+        private Point? _lastMousePosition;
+        private bool _isRotating = false;
         
-        _bitmap.Lock();
-        try
+        public ObjRenderer(ObjModel model, WriteableBitmap bitmap)
         {
-            _backBuffer = (byte*)_bitmap.BackBuffer;
-            _screenPoints = new List<Point>(Math.Max(model.Vertices.Count, 1000));
-        }
-        finally
-        {
-            _bitmap.Unlock();
-        }
-    }
-
-    
-    public void ZoomIn(float amount)
-    {
-        _zoom -= amount;
-        _zoom = Math.Clamp(_zoom, 0.5f, 200.0f); 
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void ZoomOut(float amount)
-    {
-        _zoom += amount;
-        _zoom = Math.Clamp(_zoom, 0.5f, 200.0f); 
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void MoveUp(float amount)
-    {
-        _offsetY += amount;
-        
-        _matricesDirty = true;
-        
-        RenderOptimized();
-    }
-
-    public void MoveDown(float amount)
-    {
-        _offsetY -= amount;
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void MoveLeft(float amount)
-    {
-        _offsetX += amount;
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void MoveRight(float amount)
-    {
-        _offsetX -= amount;
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void ResetView()
-    {
-        _rotationX = 0;
-        _rotationY = 0;
-        _zoom = 5.0f;
-        _offsetX = 0;
-        _offsetY = 0;
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    
-    private void CalculateModelAdjustment()
-    {
-        if (_model.Vertices.Count == 0 || !_needsModelAdjustment)
-            return;
-        
-        
-        float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
-        float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
-        
-        foreach (var vertex in _model.Vertices)
-        {
-            minX = Math.Min(minX, vertex.X);
-            minY = Math.Min(minY, vertex.Y);
-            minZ = Math.Min(minZ, vertex.Z);
-            maxX = Math.Max(maxX, vertex.X);
-            maxY = Math.Max(maxY, vertex.Y);
-            maxZ = Math.Max(maxZ, vertex.Z);
+            _model = model;
+            _bitmap = bitmap;
+            _camera = new Camera();
+            _rasterizer = new Rasterizer(bitmap, _camera);
         }
         
-        
-        _modelCenter = new Vector3(
-            (minX + maxX) * 0.5f,
-            (minY + maxY) * 0.5f,
-            (minZ + maxZ) * 0.5f
-        );
-        
-        
-        float sizeX = maxX - minX;
-        float sizeY = maxY - minY;
-        float sizeZ = maxZ - minZ;
-        float modelSize = MathF.Sqrt(sizeX * sizeX + sizeY * sizeY + sizeZ * sizeZ);
-        
-        
-        
-        _modelScale = 2.0f / modelSize;
-        
-        
-        _modelScale = Math.Clamp(_modelScale, 0.001f, 100.0f);
-        
-        
-        _zoom = modelSize * 0.5f;
-        _zoom = Math.Clamp(_zoom, 1.0f, 100.0f);
-        
-        _needsModelAdjustment = false;
-        _lastVertexCount = _model.Vertices.Count;
-        _matricesDirty = true;
-        
-        Console.WriteLine($"Model adjustment: center={_modelCenter}, scale={_modelScale}, zoom={_zoom}");
-    }
-
-    
-    public void OnMouseDown(Point position)
-    {
-        _isDragging = true;
-        _lastMousePos = position;
-    }
-
-    public void OnMouseMove(Point position)
-    {
-        if (!_isDragging) return;
-        
-        _rotationY += (float)(position.X - _lastMousePos.X) * 0.01f;
-        _rotationX += (float)(position.Y - _lastMousePos.Y) * 0.01f;
-        
-        _lastMousePos = position;
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    public void OnMouseUp()
-    {
-        _isDragging = false;
-    }
-
-    public void OnMouseWheel(int delta)
-    {
-        _zoom -= delta * 0.001f * _zoom; 
-        _zoom = Math.Clamp(_zoom, 0.5f, 200.0f);
-        _matricesDirty = true;
-        RenderOptimized();
-    }
-
-    
-    private void RenderOptimized()
-    {
-        try
+        public void Render()
         {
-            if (_model.Vertices.Count == 0 || _model.Faces.Count == 0)
-                return;
-
+            _rasterizer.Render(_model);
+        }
+        
+        // Управление камерой
+        public void OnMouseDown(Point position)
+        {
+            _lastMousePosition = position;
+            _isRotating = true;
+        }
+        
+        public void OnMouseMove(Point position)
+        {
+            if (!_isRotating || _lastMousePosition == null) return;
             
-            if (_lastVertexCount != _model.Vertices.Count)
+            float deltaX = (float)(position.X - _lastMousePosition.Value.X) * 0.01f;
+            float deltaY = (float)(position.Y - _lastMousePosition.Value.Y) * 0.01f;
+            
+            _camera.Rotate(deltaX, deltaY);
+            _lastMousePosition = position;
+            
+            Render();
+        }
+        
+        public void OnMouseUp()
+        {
+            _isRotating = false;
+            _lastMousePosition = null;
+        }
+        
+        public void OnMouseWheel(int delta)
+        {
+            float zoomStep = delta > 0 ? -0.5f : 0.5f;
+            _camera.Zoom(zoomStep);
+            Render();
+        }
+        
+        public void MoveUp(float step)
+        {
+            _camera.Pan(0, step);
+            Render();
+        }
+        
+        public void MoveDown(float step)
+        {
+            _camera.Pan(0, -step);
+            Render();
+        }
+        
+        public void MoveLeft(float step)
+        {
+            _camera.Pan(step, 0);
+            Render();
+        }
+        
+        public void MoveRight(float step)
+        {
+            _camera.Pan(-step, 0);
+            Render();
+        }
+        
+        public void ZoomIn(float step)
+        {
+            _camera.Zoom(-step);
+            Render();
+        }
+        
+        public void ZoomOut(float step)
+        {
+            _camera.Zoom(step);
+            Render();
+        }
+        
+        public void ResetView()
+        {
+            _camera.Reset();
+            Render();
+        }
+        
+        public void ForceModelAdjustment()
+        {
+            // Центрируем модель
+            if (_model.Vertices.Count > 0)
             {
-                _needsModelAdjustment = true;
-            }
-            
-            
-            CalculateModelAdjustment();
-
-            
-            _bitmap.Lock();
-            
-            try
-            {
-                
-                ClearBitmapUnsafe();
-                
-                
-                UpdateMatrices();
-                
-                
-                _screenPoints.Clear();
-                if (_screenPoints.Capacity < _model.Vertices.Count)
+                // Вычисляем центроид модели
+                Vector4 centroid = Vector4.Zero;
+                foreach (var vertex in _model.Vertices)
                 {
-                    _screenPoints.Capacity = _model.Vertices.Count * 2;
+                    centroid += vertex;
                 }
+                centroid /= _model.Vertices.Count;
                 
-                
-                TransformVerticesToList();
-                
-                
-                DrawFacesOptimized();
-            }
-            finally
-            {
-                _bitmap.AddDirtyRect(new Int32Rect(0, 0, _width, _height));
-                _bitmap.Unlock();
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine($"Render error: {ex.Message}");
-        }
-    }
-
-    private void UpdateMatrices()
-    {
-        if (!_matricesDirty) return;
-        
-        
-        Matrix4 translationToCenter = Matrix4.Translate(-_modelCenter.X, -_modelCenter.Y, -_modelCenter.Z);
-        Matrix4 scale = Matrix4.Scale(_modelScale, _modelScale, _modelScale);
-        Matrix4 rotation = Matrix4.RotateY(_rotationY) * Matrix4.RotateX(_rotationX);
-        
-        _cachedModelMatrix = rotation * scale * translationToCenter;
-        
-        
-        _cachedViewMatrix = Matrix4.LookAt(
-            new Vector3(_offsetX, _offsetY, _zoom),
-            new Vector3(_offsetX, _offsetY, 0),
-            new Vector3(0, 1, 0)
-        );
-        
-        
-        _cachedProjectionMatrix = Matrix4.Perspective(
-            MathF.PI / 3,               
-            (float)_width / _height,    
-            0.1f, 10000f                
-        );
-        
-        _matricesDirty = false;
-    }
-
-    private void TransformVerticesToList()
-    {
-        var vertices = _model.Vertices;
-        int vertexCount = vertices.Count;
-        float halfWidth = _width * 0.5f;
-        float halfHeight = _height * 0.5f;
-        
-        
-        for (int i = 0; i < vertexCount; i++)
-        {
-            _screenPoints.Add(default);
-        }
-        
-        
-        Parallel.For(0, vertexCount, i =>
-        {
-            var vertex = vertices[i];
-            
-            
-            Vector4 worldPos = _cachedModelMatrix.TransformPoint(vertex);
-            Vector4 viewPos = _cachedViewMatrix.TransformPoint(worldPos);
-            Vector4 clipPos = _cachedProjectionMatrix.TransformPoint(viewPos);
-            
-            
-            float w = clipPos.W;
-            if (Math.Abs(w) < 0.0001f) 
-            {
-                _screenPoints[i] = new Point(-1, -1); 
-                return;
+                // Можно было бы сместить модель, но у нас уже есть камера
+                // Вместо этого настраиваем камеру
+                _camera.Target = new Vector3(centroid.X, centroid.Y, centroid.Z);
+                _camera.UpdateViewMatrix();
             }
             
-            float ndcX = clipPos.X / w;
-            float ndcY = clipPos.Y / w;
-            
-            
-            if (ndcX < -5.0f || ndcX > 5.0f || ndcY < -5.0f || ndcY > 5.0f)
-            {
-                _screenPoints[i] = new Point(-1, -1);
-                return;
-            }
-            
-            
-            int screenX = (int)((ndcX + 1) * halfWidth);
-            int screenY = (int)((1 - ndcY) * halfHeight);
-            
-            
-            screenX = Math.Clamp(screenX, 0, _width - 1);
-            screenY = Math.Clamp(screenY, 0, _height - 1);
-            
-            _screenPoints[i] = new Point(screenX, screenY);
-        });
-    }
-
-    private void DrawFacesOptimized()
-    {
-        var faces = _model.Faces;
-        int faceCount = faces.Count;
-        
-        
-        if (faceCount > 1000)
-        {
-            Parallel.For(0, faceCount, i =>
-            {
-                DrawFaceOptimized(faces[i]);
-            });
+            Render();
         }
-        else
-        {
-            for (int i = 0; i < faceCount; i++)
-            {
-                DrawFaceOptimized(faces[i]);
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DrawFaceOptimized(FaceIndices[] face)
-    {
-        if (face.Length < 2) return;
-        
-        for (int i = 0; i < face.Length; i++)
-        {
-            int j = (i + 1) % face.Length;
-            
-            int idx1 = face[i].VertexIndex - 1;
-            int idx2 = face[j].VertexIndex - 1;
-            
-            if (idx1 >= 0 && idx1 < _screenPoints.Count && 
-                idx2 >= 0 && idx2 < _screenPoints.Count)
-            {
-                var p1 = _screenPoints[idx1];
-                var p2 = _screenPoints[idx2];
-                
-                
-                if (p1.X < 0 || p1.Y < 0 || p2.X < 0 || p2.Y < 0)
-                    continue;
-                
-                DrawLineUnsafe((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
-            }
-        }
-    }
-
-    
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ClearBitmapUnsafe()
-    {
-        if (_height > 1000)
-        {
-            Parallel.For(0, _height, y =>
-            {
-                byte* rowPtr = _backBuffer + y * _stride;
-                    
-                    
-                uint* uintPtr = (uint*)rowPtr;
-                for (int x = 0; x < _width; x++)
-                {
-                    uintPtr[x] = 0xFF000000; 
-                }
-            });
-        }
-        else
-        {
-                
-            for (int y = 0; y < _height; y++)
-            {
-                byte* rowPtr = _backBuffer + y * _stride;
-                    
-                for (int x = 0; x < _width; x++)
-                {
-                    int offset = x * 4;
-                    rowPtr[offset] = 0;     
-                    rowPtr[offset + 1] = 0; 
-                    rowPtr[offset + 2] = 0; 
-                    rowPtr[offset + 3] = 255; 
-                }
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DrawLineUnsafe(int x0, int y0, int x1, int y1)
-    {
-        
-        int dx = Math.Abs(x1 - x0);
-        int dy = Math.Abs(y1 - y0);
-        
-        int sx = x0 < x1 ? 1 : -1;
-        int sy = y0 < y1 ? 1 : -1;
-        
-        int err = dx - dy;
-        
-        const int minX = 0;
-        int maxX = _width - 1;
-        
-        const int minY = 0;
-        int maxY = _height - 1;
-
-        while (true)
-        {
-            
-            if (x0 >= minX && x0 <= maxX && y0 >= minY && y0 <= maxY)
-            {
-                
-                int offset = y0 * _stride + x0 * 4;
-                
-                
-                *(uint*)(_backBuffer + offset) = 0xFFFFFFFF;
-            }
-            
-            if (x0 == x1 && y0 == y1) break;
-            
-            int e2 = 2 * err;
-            if (e2 > -dy) { err -= dy; x0 += sx; }
-            if (e2 < dx) { err += dx; y0 += sy; }
-        }
-    }
-
-    
-    public void Render()
-    {
-        RenderOptimized();
-    }
-    
-    
-    public void ForceModelAdjustment()
-    {
-        _needsModelAdjustment = true;
-
-        _matricesDirty = true;
-        
-        RenderOptimized();
     }
 }
