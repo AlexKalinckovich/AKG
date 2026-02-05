@@ -1,8 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
 
-namespace ACG.Model;
+namespace AKG.Model;
 
 public unsafe struct Matrix4
 {
@@ -71,6 +70,7 @@ public unsafe struct Matrix4
             float y = this[1, 0] * point.X + this[1, 1] * point.Y + this[1, 2] * point.Z + this[1, 3] * point.W;
             float z = this[2, 0] * point.X + this[2, 1] * point.Y + this[2, 2] * point.Z + this[2, 3] * point.W;
             float w = this[3, 0] * point.X + this[3, 1] * point.Y + this[3, 2] * point.Z + this[3, 3] * point.W;
+            
             
             return new Vector4(x, y, z, w);
         }

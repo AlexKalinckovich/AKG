@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ACG.Model;
 using AKG.Core.Model;
 using AKG.Facade;
+using AKG.Handlers;
 
 namespace AKG;
 
@@ -13,20 +13,24 @@ public partial class MainWindow : Window
 {
     private readonly ObjParserFacade _objParserFacade;
     private readonly ObjRenderer _renderer;
-    private readonly ObjModel _currentObjModel;
+    private ObjModel _currentObjModel;
+    private readonly ModelMoveHandlerFacade _modelMoveHandlerFacade;
+    private readonly MouseEventHandlerFacade _mouseEventHandlerFacade;
     
     public MainWindow()
     {
         InitializeComponent();
         
-        WriteableBitmap wb = new WriteableBitmap(800, 600, 96, 96, PixelFormats.Bgra32, null);
+        WriteableBitmap wb = new WriteableBitmap(1280, 600, 96, 96, PixelFormats.Bgra32, null);
         ImgDisplay.Source = wb;
 
         _currentObjModel = new ObjModel();
         _objParserFacade = new ObjParserFacade();
-        _renderer = new ObjRenderer(_currentObjModel, wb);
-
-        CreateIcosahedron();
+        _renderer = new ObjRenderer (wb);
+        _modelMoveHandlerFacade = new ModelMoveHandlerFacade(_renderer);
+        _mouseEventHandlerFacade = new MouseEventHandlerFacade(_renderer);
+        
+        _renderer.Model = CreateIcosahedron();
         _renderer.Render();
         
         Focus();
@@ -34,15 +38,15 @@ public partial class MainWindow : Window
 
     private void ImagePanel_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        System.Windows.Point pos = e.GetPosition(ImgDisplay);
-        _renderer.OnMouseDown(pos);
+        Point pos = e.GetPosition(ImgDisplay);
+        _mouseEventHandlerFacade.HandleMouseDown(pos);
     }
 
     private void ImagePanel_MouseMove(object sender, MouseEventArgs e)
     {
         if (e.LeftButton == MouseButtonState.Pressed)
         {
-            System.Windows.Point pos = e.GetPosition(ImgDisplay);
+            Point pos = e.GetPosition(ImgDisplay);
             _renderer.OnMouseMove(pos);
         }
     }
@@ -59,38 +63,7 @@ public partial class MainWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        float moveStep = 0.2f;
-        float zoomStep = 0.5f;
-        
-        switch (e.Key)
-        {
-            case Key.W:
-                _renderer.MoveUp(moveStep);
-                break;
-            case Key.S:
-                _renderer.MoveDown(moveStep);
-                break;
-            case Key.A:
-                _renderer.MoveLeft(moveStep);
-                break;
-            case Key.D:
-                _renderer.MoveRight(moveStep);
-                break;
-            case Key.Add:
-            case Key.OemPlus:
-                _renderer.ZoomIn(zoomStep);
-                break;
-            case Key.Subtract:
-            case Key.OemMinus:
-                _renderer.ZoomOut(zoomStep);
-                break;
-            case Key.R:
-                _renderer.ResetView();
-                break;
-            case Key.Escape:
-                _renderer.ResetView();
-                break;
-        }
+        _modelMoveHandlerFacade.HandleKeyPress(e.Key);
     }
 
     private void BtnZoomIn_Click(object sender, RoutedEventArgs e)
@@ -105,22 +78,22 @@ public partial class MainWindow : Window
 
     private void BtnUp_Click(object sender, RoutedEventArgs e)
     {
-        _renderer.MoveUp(0.2f);
+        _modelMoveHandlerFacade.HandleUpMove();
     }
 
     private void BtnDown_Click(object sender, RoutedEventArgs e)
     {
-        _renderer.MoveDown(0.2f);
+        _modelMoveHandlerFacade.HandleDownMove();
     }
 
     private void BtnLeft_Click(object sender, RoutedEventArgs e)
     {
-        _renderer.MoveLeft(0.2f);
+        _modelMoveHandlerFacade.HandleLeftMove();
     }
 
     private void BtnRight_Click(object sender, RoutedEventArgs e)
     {
-        _renderer.MoveRight(0.2f);
+        _modelMoveHandlerFacade.HandleRightMove();
     }
 
     private void BtnReset_Click(object sender, RoutedEventArgs e)
@@ -128,14 +101,14 @@ public partial class MainWindow : Window
         _renderer.ResetView();
     }
 
-    private async void LoadFile_OnClick(object sender, RoutedEventArgs e)
+    private void LoadFile_OnClick(object sender, RoutedEventArgs e)
     {
-        await LoadRealObjFile();
+        _ = LoadRealObjFile();
     }
     
-    private void CreateIcosahedron()
+    private ObjModel CreateIcosahedron()
     {
-        _currentObjModel.Clear();
+        ObjModel model = new ObjModel();
         
         float t = (1f + (float)Math.Sqrt(5)) / 2f;
         
@@ -191,40 +164,17 @@ public partial class MainWindow : Window
             new[] { new FaceIndices(10, 0, 0), new FaceIndices(9, 0, 0), new FaceIndices(2, 0, 0) }
         };
         
-        _currentObjModel.AddVertices(vertices);
-        _currentObjModel.AddFaces(faces);
-        
-        Console.WriteLine($"Created icosahedron: {_currentObjModel.Vertices.Count} vertices, {_currentObjModel.Faces.Count} faces");
+        model.AddVertices(vertices);
+        model.AddFaces(faces);
+
+        return model;
     }
 
     private async Task LoadRealObjFile()
     {
-        _currentObjModel.Clear();
-        
-        await _objParserFacade.ParseObjModelFromFileAsync(onComplete: () =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    UpdateModelFromFacade();
-                    _renderer.ForceModelAdjustment();
-                    Console.WriteLine($"Finished loading: {_currentObjModel.Vertices.Count} vertices, {_currentObjModel.Faces.Count} faces");
-                });
-            }
-        );
+        ObjModel parsedModel = await _objParserFacade.ParseObjModelFromFileAsync();
+        _renderer.Model = parsedModel;
+        _renderer.Render();
     }
-
-    private void UpdateModelFromFacade()
-    {
-        _currentObjModel.Clear();
-        
-        IReadOnlyList<Vector4> vertices = _objParserFacade.CurrentObjModel.Vertices;
-        IReadOnlyList<FaceIndices[]> faces = _objParserFacade.CurrentObjModel.Faces;
-        IReadOnlyList<Vector3> normals = _objParserFacade.CurrentObjModel.Normals;
-        IReadOnlyList<Vector2> textureCoords = _objParserFacade.CurrentObjModel.TextureCoords;
-        
-        _currentObjModel.AddVertices(vertices);
-        _currentObjModel.AddFaces(faces);
-        _currentObjModel.AddNormals(normals);
-        _currentObjModel.AddTextureCoords(textureCoords);
-    }
+    
 }

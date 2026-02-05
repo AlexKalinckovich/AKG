@@ -13,6 +13,7 @@ public class LineParser
 
     public LineParser()
     {
+        _partialData = new ParticalModelData();
         _faceParser = new FaceParser();
     }
 
@@ -36,7 +37,12 @@ public class LineParser
     {
         if (string.IsNullOrWhiteSpace(line) || line.Length < 2)
             return;
-    
+
+        ParseLine2(line);
+    }
+
+    private void ParseLine2(string line)
+    {
         line = line.TrimStart();
         char first = line[0];
         char second = line.Length > 1 ? line[1] : ' ';
@@ -50,14 +56,13 @@ public class LineParser
             ParseFace(line);
             _partialData.TotalFacesProcessed++;
         }
-        
     }
 
     private void HandleVertexType(string line, char second)
     {
         string data = line.Substring(2).TrimStart();
         
-        if (second == ' ') 
+        if (second == ' ' || second == '\t') 
         {
             ParseVertex(data);
             _partialData.TotalVerticesProcessed++;
@@ -77,7 +82,8 @@ public class LineParser
 
     private void ParseVertex(string data)
     {
-        var parts = SplitData(data);
+        string[] parts = SplitData(data);
+        
         if (parts.Length < 3) return;
 
         if (TryParseFloat(parts[0], out float x) &&
@@ -94,7 +100,7 @@ public class LineParser
 
     private void ParseTexture(string data)
     {
-        var parts = SplitData(data);
+        string[] parts = SplitData(data);
         if (parts.Length < 2) return;
 
         if (TryParseFloat(parts[0], out float u) &&
@@ -106,7 +112,7 @@ public class LineParser
 
     private void ParseNormal(string data)
     {
-        var parts = SplitData(data);
+        string[] parts = SplitData(data);
         if (parts.Length < 3) return;
 
         if (TryParseFloat(parts[0], out float x) &&
@@ -121,7 +127,7 @@ public class LineParser
     {
         
         string faceData = line.Substring(1).TrimStart();
-        var faceIndices = _faceParser.ParseFaceLine(faceData);
+        FaceIndices[] faceIndices = _faceParser.ParseFaceLine(faceData);
         
         if (faceIndices.Length >= 3) 
         {

@@ -17,10 +17,9 @@ public class MouseEventHandlerFacade
         
     public void HandleMouseDown(Point position)
     {
-        _lastMousePosition = position;
-        _isRotating = true;
+        _renderer.OnMouseDown(position);
     }
-        
+    
     public void HandleMouseMove(Point position)
     {
         if (!_isRotating || _lastMousePosition == null) 

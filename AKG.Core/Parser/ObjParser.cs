@@ -4,20 +4,23 @@ namespace AKG.Core.Parser;
 
 public class ObjParser
 {
-    private readonly ChunkProcessor _processor;
+    
+    private LineParser _lineParser;
+
     
     public ObjParser()
     {
-        _processor = new ChunkProcessor();
+        _lineParser = new LineParser();
     }
     
     public async Task<ObjModel> ParseAsync(IAsyncEnumerable<string[]> chunks)
     {
         ObjModel model = new ObjModel();
         
-        await foreach (var chunk in chunks)
+        await foreach (string[] chunk in chunks)
         {
-            var partialData = _processor.ProcessChunk(chunk);
+            ParticalModelData partialData = _lineParser.ParseLines(chunk);
+            
             model.MergeWith(partialData);
         }
         

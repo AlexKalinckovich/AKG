@@ -5,7 +5,7 @@ namespace AKG.FileHelper;
 
 public class ObjFileLoader
 {
-    private const int DefaultLinesPerChunk = 256;
+    private const int DefaultLinesPerChunk = 2048;
     
     public async IAsyncEnumerable<string[]> LoadFileByChunksAsync(int linesPerChunk = DefaultLinesPerChunk)
     {

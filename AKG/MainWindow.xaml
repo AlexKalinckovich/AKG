@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="3D Obj Viewer - High Performance" 
-        WindowState="Maximized" 
+        WindowState="Normal" 
         WindowStartupLocation="CenterScreen"
         KeyDown="Window_KeyDown" 
         Focusable="True">
@@ -21,11 +21,9 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
-        <!-- Панель управления -->
         <WrapPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,10">
             <Button Name="BtnOpenFile" Click="LoadFile_OnClick" MinWidth="100">Open file</Button>
             
-            <!-- Кнопки управления -->
             <StackPanel Orientation="Horizontal" Margin="10,0">
                 <TextBlock VerticalAlignment="Center" Margin="5,0">Zoom:</TextBlock>
                 <Button Name="BtnZoomIn" Click="BtnZoomIn_Click">+</Button>
@@ -43,20 +41,17 @@
             </StackPanel>
         </WrapPanel>
         
-        <!-- Область отображения - растягиваем на всю доступную область -->
         <Border Grid.Row="1" Background="Black" 
                 MouseDown="ImagePanel_MouseDown"
                 MouseMove="ImagePanel_MouseMove"
                 MouseUp="ImagePanel_MouseUp"
                 MouseWheel="ImagePanel_MouseWheel"
                 Focusable="True">
-            <!-- Устанавливаем Stretch="Uniform" или "Fill" чтобы изображение заполняло область -->
             <Image x:Name="ImgDisplay" Stretch="Uniform" 
                    HorizontalAlignment="Stretch" 
                    VerticalAlignment="Stretch"/>
         </Border>
         
-        <!-- Подсказка по управлению -->
         <TextBlock Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Right"
                    Margin="10" Foreground="White" Background="#80000000" Padding="5">
             <Run>Controls:</Run><LineBreak/>

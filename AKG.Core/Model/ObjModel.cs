@@ -4,10 +4,10 @@ namespace AKG.Core.Model;
 
 public class ObjModel
 {
-    private readonly List<Vector4> _vertices = new();
-    private readonly List<Vector3> _normals = new();
-    private readonly List<Vector2> _textureCoords = new();
-    private readonly List<FaceIndices[]> _faces = new();
+    private readonly List<Vector4> _vertices = new(1000);
+    private readonly List<Vector3> _normals = new(1000);
+    private readonly List<Vector2> _textureCoords = new(1000);
+    private readonly List<FaceIndices[]> _faces = new(1000);
 
     public IReadOnlyList<Vector4> Vertices => _vertices;
     public IReadOnlyList<Vector3> Normals => _normals;
