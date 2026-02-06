@@ -1,4 +1,5 @@
 using AKG.Core.Parser;
+using AKG.Core.Parser.ObjPartParsers.LineParsers;
 using NUnit.Framework;
 
 namespace TestParser;
@@ -6,12 +7,12 @@ namespace TestParser;
 [TestFixture]
 public class FaceParserTests
 {
-    private FaceParser _parser;
+    private FaceLineParser _parser;
 
     [SetUp]
     public void Setup()
     {
-        _parser = new FaceParser();
+        _parser = new FaceLineParser();
     }
 
     [Test]
@@ -21,7 +22,7 @@ public class FaceParserTests
         string faceLine = "1/2/3 4/5/6 7/8/9";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(3));
@@ -48,7 +49,7 @@ public class FaceParserTests
         string faceLine = "1 2 3";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(3));
@@ -71,7 +72,7 @@ public class FaceParserTests
         string faceLine = "1/2 3/4 5/6";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(3));
@@ -92,7 +93,7 @@ public class FaceParserTests
         string faceLine = "1//2 3//4 5//6";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(3));
@@ -113,7 +114,7 @@ public class FaceParserTests
         string faceLine = "1/2/3 4/5/6 7/8/9 10/11/12";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(4));
@@ -127,7 +128,7 @@ public class FaceParserTests
         string faceLine = "";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -140,7 +141,7 @@ public class FaceParserTests
         string faceLine = "   \t  ";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Is.Empty);
@@ -153,7 +154,7 @@ public class FaceParserTests
         string faceLine = "1/abc/3 4//6";
 
         // Act
-        var result = _parser.ParseFaceLine(faceLine);
+        var result = _parser.ParseFaceLineString(faceLine);
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(2));

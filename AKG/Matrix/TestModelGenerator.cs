@@ -3,7 +3,7 @@ using AKG.Core.Model;
 
 namespace AKG.Matrix;
 
-public class Temp
+public static class TestModelGenerator
 {
     
     public static ObjModel CreateIcosahedron()

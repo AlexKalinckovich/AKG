@@ -106,6 +106,7 @@ public unsafe struct Matrix4
     {
         float c = (float)Math.Cos(radians);
         float s = (float)Math.Sin(radians);
+        
         Matrix4 m = Identity();
         m[0, 0] = c; m[0, 1] = -s;
         m[1, 0] = s; m[1, 1] = c;
@@ -158,17 +159,7 @@ public unsafe struct Matrix4
         m[2, 3] = (2 * zfar * znear) / (znear - zfar);
         m[3, 2] = -1;
         m[3, 3] = 0;
-        return m;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Matrix4 Orthographic(float width, float height, float znear, float zfar)
-    {
-        Matrix4 m = Identity();
-        m[0, 0] = 2f / width;
-        m[1, 1] = 2f / height;
-        m[2, 2] = 1f / (zfar - znear);
-        m[2, 3] = znear / (znear - zfar);
+        
         return m;
     }
 }

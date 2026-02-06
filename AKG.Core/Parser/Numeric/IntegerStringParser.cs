@@ -5,11 +5,11 @@ using System.Globalization;
 
 public class IntegerStringParser
 {
-    public int ParseAndAdjustIndexFromString(string indexString)
+    public void ParseAndAdjustIndexFromString(string indexString, out int parsedIndex)
     {
-        int parsedIndex = int.Parse(indexString, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        int.TryParse(indexString, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedIndex);
         
-        return AdjustParsedIndex(parsedIndex);
+        parsedIndex = AdjustParsedIndex(parsedIndex);
     }
 
     private int AdjustParsedIndex(int parsedIndex)
@@ -20,10 +20,5 @@ public class IntegerStringParser
         }
         
         return parsedIndex;
-    }
-
-    public bool CanParseStringToInteger(string inputString)
-    {
-        return int.TryParse(inputString, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
     }
 }

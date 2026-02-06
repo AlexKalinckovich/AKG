@@ -37,10 +37,10 @@ public class IntegrationTests
         {
             async IAsyncEnumerable<string[]> MockFileLoader()
             {
-                var lines = TestObjContent.Split('\n');
-                var chunk = new System.Collections.Generic.List<string>();
+                string[] lines = TestObjContent.Split('\n');
+                List<string> chunk = new List<string>();
                     
-                foreach (var line in lines)
+                foreach (string line in lines)
                 {
                     var trimmed = line.Trim();
                     if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith("#"))
@@ -66,7 +66,7 @@ public class IntegrationTests
             var parser = new ObjParser();
 
             // Act
-            var model = await parser.ParseAsync(MockFileLoader());
+            ObjModel model = await parser.ParseAsync(MockFileLoader());
 
             // Assert
             Assert.Multiple(() =>

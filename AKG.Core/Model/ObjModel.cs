@@ -34,7 +34,7 @@ public class ObjModel
         _faces.AddRange(faces);
     }
 
-    public void MergeWith(ParticalModelData partialData)
+    public void MergeWith(PartialModelData partialData)
     {
         AddVertices(partialData.Vertices);
         AddNormals(partialData.Normals);

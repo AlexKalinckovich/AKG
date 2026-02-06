@@ -1,147 +1,58 @@
-using AKG.Core.Model;
+// ================ LineParser.cs ================
+
+using AKG.Core.Parser.ObjPartParsers;
+using AKG.Core.Parser.ObjPartParsers.Abstraction;
 
 namespace AKG.Core.Parser;
 
-using System.Globalization;
-using System.Numerics;
-
+using Model;
 
 public class LineParser
 {
-    private ParticalModelData _partialData;
-    private readonly FaceParser _faceParser;
+    private PartialModelData _partialModelData;
+    private readonly LineTypeIdentifier _lineTypeIdentifier;
+    private readonly LineParserFactory _lineParserFactory;
 
     public LineParser()
     {
-        _partialData = new ParticalModelData();
-        _faceParser = new FaceParser();
+        _partialModelData = new PartialModelData();
+        _lineTypeIdentifier = new LineTypeIdentifier();
+        _lineParserFactory = new LineParserFactory();
     }
 
-    public ParticalModelData ParseLines(string[] lines)
+    public PartialModelData ParseLines(string[] lines)
     {
-        _partialData = new ParticalModelData();
+        _partialModelData = new PartialModelData();
         
+        ProcessEachLine(lines);
+        
+        return _partialModelData;
+    }
+
+    public PartialModelData GetPartialModel()
+    {
+        return _partialModelData;
+    }
+
+    private void ParseSingleLine(string line)
+    {
+        LineType lineType = _lineTypeIdentifier.IdentifyLineType(line);
+        
+        ProcessLineWithType(line, lineType);
+    }
+
+    private void ProcessEachLine(string[] lines)
+    {
         foreach (string line in lines)
         {
-            ParseLine(line);
-        }
-        
-        return _partialData;
-    }
-    public ParticalModelData GetPartialModel()
-    {
-        return _partialData;
-    }
-
-    public void ParseLine(string line)
-    {
-        if (string.IsNullOrWhiteSpace(line) || line.Length < 2)
-            return;
-
-        ParseLine2(line);
-    }
-
-    private void ParseLine2(string line)
-    {
-        line = line.TrimStart();
-        char first = line[0];
-        char second = line.Length > 1 ? line[1] : ' ';
-
-        if (first == 'v')
-        {
-            HandleVertexType(line, second);
-        }
-        else if (first == 'f')
-        {
-            ParseFace(line);
-            _partialData.TotalFacesProcessed++;
+            ParseSingleLine(line);
         }
     }
 
-    private void HandleVertexType(string line, char second)
+    private void ProcessLineWithType(string line, LineType lineType)
     {
-        string data = line.Substring(2).TrimStart();
-        
-        if (second == ' ' || second == '\t') 
-        {
-            ParseVertex(data);
-            _partialData.TotalVerticesProcessed++;
-        }
-        else if (line.Length > 2 && line[2] == ' ')
-        {
-            if (second == 't') 
-            {
-                ParseTexture(data);
-            }
-            else if (second == 'n') 
-            {
-                ParseNormal(data);
-            }
-        }
-    }
+        ILineTypeParser lineTypeParser = _lineParserFactory.GetParserForLineType(lineType);
 
-    private void ParseVertex(string data)
-    {
-        string[] parts = SplitData(data);
-        
-        if (parts.Length < 3) return;
-
-        if (TryParseFloat(parts[0], out float x) &&
-            TryParseFloat(parts[1], out float y) &&
-            TryParseFloat(parts[2], out float z))
-        {
-            float w = 1.0f;
-            if (parts.Length > 3 && TryParseFloat(parts[3], out float parsedW))
-                w = parsedW;
-
-            _partialData.Vertices.Add(new Vector4(x, y, z, w));
-        }
-    }
-
-    private void ParseTexture(string data)
-    {
-        string[] parts = SplitData(data);
-        if (parts.Length < 2) return;
-
-        if (TryParseFloat(parts[0], out float u) &&
-            TryParseFloat(parts[1], out float v))
-        {
-            _partialData.TextureCoords.Add(new Vector2(u, v));
-        }
-    }
-
-    private void ParseNormal(string data)
-    {
-        string[] parts = SplitData(data);
-        if (parts.Length < 3) return;
-
-        if (TryParseFloat(parts[0], out float x) &&
-            TryParseFloat(parts[1], out float y) &&
-            TryParseFloat(parts[2], out float z))
-        {
-            _partialData.Normals.Add(new Vector3(x, y, z));
-        }
-    }
-
-    private void ParseFace(string line)
-    {
-        
-        string faceData = line.Substring(1).TrimStart();
-        FaceIndices[] faceIndices = _faceParser.ParseFaceLine(faceData);
-        
-        if (faceIndices.Length >= 3) 
-        {
-            _partialData.Faces.Add(faceIndices);
-        }
-    }
-
-    private bool TryParseFloat(string str, out float value)
-    {
-        return float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
-    }
-
-    private string[] SplitData(string data)
-    {
-        return data.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        lineTypeParser.ParseLine(line, _partialModelData);
     }
 }

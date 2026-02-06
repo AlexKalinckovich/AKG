@@ -105,7 +105,7 @@ public class ObjModelTests
     public void MergeWith_ParticalModelData_MergesCorrectly()
     {
         // Arrange
-        var partialData = new ParticalModelData
+        var partialData = new PartialModelData
         {
             Vertices = { new Vector4(1.0f, 0.0f, 0.0f, 1.0f) },
             Normals = { new Vector3(0.0f, 0.0f, 1.0f) },

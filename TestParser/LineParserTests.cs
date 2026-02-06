@@ -23,7 +23,7 @@ public class LineParserTests
         string line = "v 1.0 2.0 3.0";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -38,7 +38,7 @@ public class LineParserTests
         string line = "v 1.0 2.0 3.0 0.5";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -52,7 +52,7 @@ public class LineParserTests
         string line = "vt 0.5 0.7";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -67,7 +67,7 @@ public class LineParserTests
         string line = "vn 0.0 1.0 0.0";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -82,7 +82,7 @@ public class LineParserTests
         string line = "f 1/2/3 4/5/6 7/8/9";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -103,10 +103,7 @@ public class LineParserTests
         };
 
         // Act
-        foreach (var line in lines)
-        {
-            _lineParser.ParseLine(line);
-        }
+        _lineParser.ParseLines(lines);
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -121,7 +118,7 @@ public class LineParserTests
         string line = "# This is a comment";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -136,7 +133,7 @@ public class LineParserTests
         string line = "";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert
@@ -150,8 +147,8 @@ public class LineParserTests
         string line = "v\t1.0\t2.0\t3.0";
 
         // Act
-        _lineParser.ParseLine(line);
-        ParticalModelData result = _lineParser.GetPartialModel();
+        
+        PartialModelData result = _lineParser.ParseLines(new []{line});
 
         // Assert
         Assert.That(result.Vertices, Has.Count.EqualTo(1));
@@ -164,7 +161,7 @@ public class LineParserTests
         string line = "v invalid data";
 
         // Act
-        _lineParser.ParseLine(line);
+        _lineParser.ParseLines(new []{line});
         var result = _lineParser.GetPartialModel();
 
         // Assert

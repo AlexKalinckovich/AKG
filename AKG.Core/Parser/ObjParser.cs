@@ -19,7 +19,7 @@ public class ObjParser
         
         await foreach (string[] chunk in chunks)
         {
-            ParticalModelData partialData = _lineParser.ParseLines(chunk);
+            PartialModelData partialData = _lineParser.ParseLines(chunk);
             
             model.MergeWith(partialData);
         }
