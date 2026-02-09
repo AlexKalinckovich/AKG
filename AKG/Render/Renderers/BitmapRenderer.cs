@@ -174,4 +174,14 @@ public unsafe class BitmapRenderer
             y += stepY;
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetPixel(int x, int y, uint color)
+    {
+        if (x >= 0 && x < _width && y >= 0 && y < _height)
+        {
+            int offset = y * _stride + x * RenderConstants.BytesPerPixel;
+            *(uint*)(_backBuffer + offset) = color;
+        }
+    }
 }

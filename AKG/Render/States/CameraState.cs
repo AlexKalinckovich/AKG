@@ -3,7 +3,6 @@ using AKG.Render.Constants;
 
 namespace AKG.Render.States;
 
-// ================ CameraState.cs ================
 
 public class CameraState
 {

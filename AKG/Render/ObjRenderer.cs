@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using AKG.Core.Model;
 using AKG.Handlers;
+using AKG.Matrix;
+using AKG.Model;
 using AKG.Render.Renderers;
 using AKG.Render.States;
 
@@ -31,7 +33,7 @@ public class ObjRenderer
         _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, width, height);
         _vertexTransformer = new VertexTransformer(_matrixManager, width, height);
         _bitmapRenderer = new BitmapRenderer(bitmap);
-        _faceRenderer = new FaceRenderer(_bitmapRenderer);
+        _faceRenderer = new FaceRenderer(_bitmapRenderer, width, height);
         _mouseHandler = new MouseInteractionHandler(_cameraState, _matrixManager);
     }
 
@@ -92,11 +94,12 @@ public class ObjRenderer
     {
         UpdateScreenState();
 
-        Point[] screenPoints = _vertexTransformer.GetTransformedPoints();
+        VertexData[] vertices = _vertexTransformer.GetTransformedVertices();
             
-        int screenPointsCount = _vertexTransformer.GetTransformedPointsCount();
-            
-        _faceRenderer.RenderFaces(Model.Faces, screenPoints, screenPointsCount);
+        int verticesCount = _vertexTransformer.GetTransformedVerticesCount();
+
+        
+        _faceRenderer.RenderFaces(Model.Faces, vertices, verticesCount, _cameraState.TargetPosition);
     }
 
     private void UpdateScreenState()

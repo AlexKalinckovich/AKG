@@ -2,16 +2,15 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using ACG.Model;
 using AKG.Core.Model;
-using AKG.Model;
 
 
 namespace AKG;
 
 public unsafe class ObjRenderer
 {
-    public ObjModel Model { get; set; }
-    
+    private readonly ObjModel _model;
     private readonly WriteableBitmap _bitmap;
     private readonly int _width, _height;
     private readonly int _stride;
@@ -25,7 +24,7 @@ public unsafe class ObjRenderer
     private float _offsetY = 0;
     
     
-    private readonly List<Point> _screenPoints;
+    private List<Point> _screenPoints;
     private Matrix4 _cachedModelMatrix;
     private Matrix4 _cachedViewMatrix;
     private Matrix4 _cachedProjectionMatrix;
@@ -41,9 +40,9 @@ public unsafe class ObjRenderer
     private bool _isDragging = false;
     private Point _lastMousePos;
 
-    public ObjRenderer(WriteableBitmap bitmap)
+    public ObjRenderer(ObjModel model, WriteableBitmap bitmap)
     {
-        Model = new ObjModel();
+        _model = model;
         _bitmap = bitmap;
         _width = bitmap.PixelWidth;
         _height = bitmap.PixelHeight;
@@ -54,7 +53,7 @@ public unsafe class ObjRenderer
         try
         {
             _backBuffer = (byte*)_bitmap.BackBuffer;
-            _screenPoints = new List<Point>(Math.Max(Model.Vertices.Count, 1000));
+            _screenPoints = new List<Point>(Math.Max(model.Vertices.Count, 1000));
         }
         finally
         {
@@ -76,7 +75,6 @@ public unsafe class ObjRenderer
         _zoom += amount;
         _zoom = Math.Clamp(_zoom, 0.5f, 200.0f); 
         _matricesDirty = true;
-        
         RenderOptimized();
     }
 
@@ -124,14 +122,14 @@ public unsafe class ObjRenderer
     
     private void CalculateModelAdjustment()
     {
-        if (Model.Vertices.Count == 0 || !_needsModelAdjustment)
+        if (_model.Vertices.Count == 0 || !_needsModelAdjustment)
             return;
         
         
         float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
         float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
         
-        foreach (Vector4 vertex in Model.Vertices)
+        foreach (var vertex in _model.Vertices)
         {
             minX = Math.Min(minX, vertex.X);
             minY = Math.Min(minY, vertex.Y);
@@ -162,12 +160,14 @@ public unsafe class ObjRenderer
         _modelScale = Math.Clamp(_modelScale, 0.001f, 100.0f);
         
         
+        _zoom = modelSize * 0.5f;
         _zoom = Math.Clamp(_zoom, 1.0f, 100.0f);
         
         _needsModelAdjustment = false;
-        _lastVertexCount = Model.Vertices.Count;
+        _lastVertexCount = _model.Vertices.Count;
         _matricesDirty = true;
         
+        Console.WriteLine($"Model adjustment: center={_modelCenter}, scale={_modelScale}, zoom={_zoom}");
     }
 
     
@@ -207,11 +207,11 @@ public unsafe class ObjRenderer
     {
         try
         {
-            if (Model.Vertices.Count == 0 || Model.Faces.Count == 0)
+            if (_model.Vertices.Count == 0 || _model.Faces.Count == 0)
                 return;
 
             
-            if (_lastVertexCount != Model.Vertices.Count)
+            if (_lastVertexCount != _model.Vertices.Count)
             {
                 _needsModelAdjustment = true;
             }
@@ -232,9 +232,9 @@ public unsafe class ObjRenderer
                 
                 
                 _screenPoints.Clear();
-                if (_screenPoints.Capacity < Model.Vertices.Count)
+                if (_screenPoints.Capacity < _model.Vertices.Count)
                 {
-                    _screenPoints.Capacity = Model.Vertices.Count * 2;
+                    _screenPoints.Capacity = _model.Vertices.Count * 2;
                 }
                 
                 
@@ -249,7 +249,7 @@ public unsafe class ObjRenderer
                 _bitmap.Unlock();
             }
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             Console.WriteLine($"Render error: {ex.Message}");
         }
@@ -285,7 +285,7 @@ public unsafe class ObjRenderer
 
     private void TransformVerticesToList()
     {
-        var vertices = Model.Vertices;
+        var vertices = _model.Vertices;
         int vertexCount = vertices.Count;
         float halfWidth = _width * 0.5f;
         float halfHeight = _height * 0.5f;
@@ -338,7 +338,7 @@ public unsafe class ObjRenderer
 
     private void DrawFacesOptimized()
     {
-        var faces = Model.Faces;
+        var faces = _model.Faces;
         int faceCount = faces.Count;
         
         
@@ -362,23 +362,24 @@ public unsafe class ObjRenderer
     private void DrawFaceOptimized(FaceIndices[] face)
     {
         if (face.Length < 2) return;
-    
+        
         for (int i = 0; i < face.Length; i++)
         {
             int j = (i + 1) % face.Length;
-        
-            int idx1 = face[i].VertexIndex;
-            int idx2 = face[j].VertexIndex;
-        
+            
+            int idx1 = face[i].VertexIndex - 1;
+            int idx2 = face[j].VertexIndex - 1;
+            
             if (idx1 >= 0 && idx1 < _screenPoints.Count && 
                 idx2 >= 0 && idx2 < _screenPoints.Count)
             {
-                Point p1 = _screenPoints[idx1];
-                Point p2 = _screenPoints[idx2];
-            
+                var p1 = _screenPoints[idx1];
+                var p2 = _screenPoints[idx2];
+                
+                
                 if (p1.X < 0 || p1.Y < 0 || p2.X < 0 || p2.Y < 0)
                     continue;
-            
+                
                 DrawLineUnsafe((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
             }
         }
@@ -440,8 +441,7 @@ public unsafe class ObjRenderer
         const int minY = 0;
         int maxY = _height - 1;
 
-        bool isLoop = true;        
-        while (isLoop)
+        while (true)
         {
             
             if (x0 >= minX && x0 <= maxX && y0 >= minY && y0 <= maxY)
@@ -452,23 +452,12 @@ public unsafe class ObjRenderer
                 
                 *(uint*)(_backBuffer + offset) = 0xFFFFFFFF;
             }
-
-            isLoop = x0 != x1 || y0 != y1;
-            if (isLoop)
-            {
-                int e2 = 2 * err;
-                if (e2 > -dy)
-                {
-                    err -= dy;
-                    x0 += sx;
-                }
-
-                if (e2 < dx)
-                {
-                    err += dx;
-                    y0 += sy;
-                }
-            }
+            
+            if (x0 == x1 && y0 == y1) break;
+            
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
         }
     }
 
@@ -478,4 +467,13 @@ public unsafe class ObjRenderer
         RenderOptimized();
     }
     
+    
+    public void ForceModelAdjustment()
+    {
+        _needsModelAdjustment = true;
+
+        _matricesDirty = true;
+        
+        RenderOptimized();
+    }
 }

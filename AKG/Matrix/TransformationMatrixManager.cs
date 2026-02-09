@@ -1,13 +1,10 @@
 // ================ TransformationMatrixManager.cs ================
 
-using AKG.Render;
+using AKG.Model;
 using AKG.Render.Constants;
 using AKG.Render.States;
 
-namespace AKG;
-
-using System.Numerics;
-using AKG.Model;
+namespace AKG.Matrix;
 
 public class TransformationMatrixManager
 {
@@ -21,7 +18,10 @@ public class TransformationMatrixManager
     private Matrix4 _projectionMatrix;
     private bool _areMatricesDirty = true;
 
-    public TransformationMatrixManager(CameraState cameraState, ModelState modelState, int viewportWidth, int viewportHeight)
+    public TransformationMatrixManager(CameraState cameraState, 
+                                       ModelState modelState, 
+                                       int viewportWidth, 
+                                       int viewportHeight)
     {
         _cameraState = cameraState;
         _modelState = modelState;
@@ -75,8 +75,8 @@ public class TransformationMatrixManager
         _projectionMatrix = Matrix4.Perspective(
             RenderConstants.DefaultFieldOfView,
             aspectRatio,
-            RenderConstants.DefaultNearClippingPlane,
-            RenderConstants.DefaultFarClippingPlane
+            RenderConstants.DefaultZNearClippingPlane,
+            RenderConstants.DefaultZFarClippingPlane
         );
     }
 

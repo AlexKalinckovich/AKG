@@ -1,19 +1,14 @@
-// ================ VertexTransformer.cs ================
-
+using System.Numerics;
 using System.Windows;
-using AKG.Render;
-using AKG.Render.Buffers;
+using AKG.Model;
 using AKG.Render.Constants;
 
-namespace AKG;
-
-using System.Numerics;
-using AKG.Model;
+namespace AKG.Matrix;
 
 public sealed class VertexTransformer : IDisposable
 {
     private readonly TransformationMatrixManager _matrixManager;
-    private readonly ScreenPointBufferManager _bufferManager;
+    private readonly VertexDataBufferManager _bufferManager;
     
     private readonly int _viewportWidth;
     private readonly int _viewportHeight;
@@ -23,30 +18,37 @@ public sealed class VertexTransformer : IDisposable
         _matrixManager = matrixManager;
         _viewportWidth = viewportWidth;
         _viewportHeight = viewportHeight;
-        _bufferManager = new ScreenPointBufferManager();
+        _bufferManager = new VertexDataBufferManager();
     }
 
     public void TransformVertices(IReadOnlyList<Vector4> vertices)
     {
         int vertexCount = vertices.Count;
-        Point[] pointBuffer = _bufferManager.GetOrCreateBuffer(vertexCount);
+        VertexData[] vertexBuffer = _bufferManager.GetOrCreateBuffer(vertexCount);
         
         float halfWidth = _viewportWidth * RenderConstants.InitialHalfCoordinateSystem;
         float halfHeight = _viewportHeight * RenderConstants.InitialHalfCoordinateSystem;
 
-        InitializeBufferWithDefaultValues(pointBuffer, vertexCount);
-        TransformVerticesInParallel(vertices, pointBuffer, halfWidth, halfHeight);
+        InitializeBufferWithDefaultValues(vertexBuffer, vertexCount);
+        TransformVerticesInParallel(vertices, vertexBuffer, halfWidth, halfHeight);
     }
 
-    private void InitializeBufferWithDefaultValues(Point[] buffer, int vertexCount)
+    private void InitializeBufferWithDefaultValues(VertexData[] buffer, int vertexCount)
     {
         for (int index = 0; index < vertexCount; index++)
         {
-            buffer[index] = new Point(-1, -1);
+            buffer[index] = new VertexData
+            {
+                ScreenPoint = new Point(-1, -1),
+                WorldPosition = Vector3.Zero,
+                ViewPosition = Vector3.Zero,
+                ClipPosition = Vector3.Zero,
+                Depth = 0
+            };
         }
     }
 
-    private void TransformVerticesInParallel(IReadOnlyList<Vector4> vertices, Point[] buffer, float halfWidth, float halfHeight)
+    private void TransformVerticesInParallel(IReadOnlyList<Vector4> vertices, VertexData[] buffer, float halfWidth, float halfHeight)
     {
         int vertexCount = vertices.Count;
 
@@ -56,14 +58,22 @@ public sealed class VertexTransformer : IDisposable
         });
     }
 
-    private void TransformSingleVertex(Vector4 vertex, int index, Point[] buffer, float halfWidth, float halfHeight)
+    private void TransformSingleVertex(Vector4 vertex, int index, VertexData[] buffer, float halfWidth, float halfHeight)
     {
         Vector4 worldPosition = _matrixManager.ModelMatrix.TransformPoint(vertex);
         Vector4 viewPosition = _matrixManager.ViewMatrix.TransformPoint(worldPosition);
         Vector4 clipPosition = _matrixManager.ProjectionMatrix.TransformPoint(viewPosition);
 
         Point screenPoint = ConvertClipSpaceToScreenSpace(clipPosition, halfWidth, halfHeight);
-        buffer[index] = screenPoint;
+        
+        buffer[index] = new VertexData
+        {
+            WorldPosition = new Vector3(worldPosition.X, worldPosition.Y, worldPosition.Z),
+            ViewPosition = new Vector3(viewPosition.X, viewPosition.Y, viewPosition.Z),
+            ClipPosition = new Vector3(clipPosition.X, clipPosition.Y, clipPosition.Z),
+            ScreenPoint = screenPoint,
+            Depth = clipPosition.Z / clipPosition.W
+        };
     }
 
     private Point ConvertClipSpaceToScreenSpace(Vector4 clipPosition, float halfWidth, float halfHeight)
@@ -111,12 +121,12 @@ public sealed class VertexTransformer : IDisposable
         return (int)((1 - normalizedCoordinate) * halfDimension);
     }
 
-    public Point[] GetTransformedPoints()
+    public VertexData[] GetTransformedVertices()
     {
         return _bufferManager.GetBufferArray();
     }
 
-    public int GetTransformedPointsCount()
+    public int GetTransformedVerticesCount()
     {
         return _bufferManager.CurrentBufferSize;
     }
