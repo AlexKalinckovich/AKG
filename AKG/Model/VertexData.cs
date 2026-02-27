@@ -7,7 +7,7 @@ public struct VertexData
 {
     public Vector3 WorldPosition;
     public Vector3 ViewPosition;
-    public Vector3 ClipPosition;
+    public Vector4 ClipPosition;
     public Point ScreenPoint;
     public float Depth;
 }

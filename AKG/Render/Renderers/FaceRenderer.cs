@@ -96,7 +96,12 @@ public sealed class FaceRenderer
         if (!IsTriangleValid(v0, v1, v2))
             return;
 
-        if (!_backFaceCulling.IsVisible(v0.ViewPosition, v1.ViewPosition, v2.ViewPosition, _targetPosition))
+        if (!IsTriangleInFrustum(v0.ClipPosition, v1.ClipPosition, v2.ClipPosition))
+        {
+            return;
+        }
+        
+        if (!_backFaceCulling.IsVisible(v0.ViewPosition, v1.ViewPosition, v2.ViewPosition))
             return;
 
         float intensity = CalculateFlatShading(v0.WorldPosition, v1.WorldPosition, v2.WorldPosition);
@@ -104,6 +109,17 @@ public sealed class FaceRenderer
         uint color = CalculateColor(intensity);
         
         RasterizeTriangle(v0, v1, v2, color);
+    }
+    
+    private bool IsTriangleInFrustum(Vector4 clip0, Vector4 clip1, Vector4 clip2)
+    {
+        if (clip0.X < -clip0.W && clip1.X < -clip1.W && clip2.X < -clip2.W) return false;
+        if (clip0.X >  clip0.W && clip1.X >  clip1.W && clip2.X >  clip2.W) return false;
+        if (clip0.Y < -clip0.W && clip1.Y < -clip1.W && clip2.Y < -clip2.W) return false;
+        if (clip0.Y >  clip0.W && clip1.Y >  clip1.W && clip2.Y >  clip2.W) return false;
+        if (clip0.Z < 0       && clip1.Z < 0       && clip2.Z < 0)          return false;
+        if (clip0.Z > clip0.W && clip1.Z > clip1.W && clip2.Z > clip2.W)    return false;
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

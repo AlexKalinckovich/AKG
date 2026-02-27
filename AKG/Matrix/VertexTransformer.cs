@@ -42,7 +42,7 @@ public sealed class VertexTransformer : IDisposable
                 ScreenPoint = new Point(-1, -1),
                 WorldPosition = Vector3.Zero,
                 ViewPosition = Vector3.Zero,
-                ClipPosition = Vector3.Zero,
+                ClipPosition = Vector4.Zero,
                 Depth = 0
             };
         }
@@ -70,7 +70,7 @@ public sealed class VertexTransformer : IDisposable
         {
             WorldPosition = new Vector3(worldPosition.X, worldPosition.Y, worldPosition.Z),
             ViewPosition = new Vector3(viewPosition.X, viewPosition.Y, viewPosition.Z),
-            ClipPosition = new Vector3(clipPosition.X, clipPosition.Y, clipPosition.Z),
+            ClipPosition = new Vector4(clipPosition.X, clipPosition.Y, clipPosition.Z, clipPosition.W),
             ScreenPoint = screenPoint,
             Depth = clipPosition.Z / clipPosition.W
         };
