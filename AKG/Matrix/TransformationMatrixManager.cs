@@ -8,6 +8,10 @@ namespace AKG.Matrix;
 
 public class TransformationMatrixManager
 {
+    /*
+     * 
+     */
+    
     private readonly CameraState _cameraState;
     private readonly ModelState _modelState;
     private readonly int _viewportWidth;

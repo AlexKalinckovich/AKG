@@ -103,7 +103,9 @@ public sealed class FaceRenderer
         
         if (!_backFaceCulling.IsVisible(v0.ViewPosition, v1.ViewPosition, v2.ViewPosition))
             return;
-
+        /*
+         * Вершины в пространстве экрана по трем вершинам найти два ребра (B - A) (C - A) (определитель, перпендикулярное скалярное произведение) ax * by - by *ax
+         */
         float intensity = CalculateFlatShading(v0.WorldPosition, v1.WorldPosition, v2.WorldPosition);
         
         uint color = CalculateColor(intensity);
