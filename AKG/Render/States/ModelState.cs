@@ -1,4 +1,4 @@
-// ================ ModelState.cs ================
+
 
 using System.Numerics;
 using AKG.Core.Model;

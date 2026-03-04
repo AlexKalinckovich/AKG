@@ -13,7 +13,7 @@ public static class RenderConstants
     public const float DefaultFieldOfView = MathF.PI / 3;
     
     public const float DefaultZNearClippingPlane = 0.1f;
-    public const float DefaultZFarClippingPlane = 10000f;
+    public const float DefaultZFarClippingPlane = 5000f;
     
     public const float DefaultNormalizationFactor = 2.0f;
     

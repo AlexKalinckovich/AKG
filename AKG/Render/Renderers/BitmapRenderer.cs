@@ -122,16 +122,16 @@ public unsafe class BitmapRenderer
         int maximumX = _width - 1;
         int maximumY = _height - 1;
 
-        while (true)
+        bool isDrawingComplete = false;
+        while (!isDrawingComplete)
         {
             DrawPixelIfWithinBounds(x0, y0, maximumX, maximumY);
 
-            if (IsLineDrawingComplete(x0, y0, x1, y1))
+            isDrawingComplete = IsLineDrawingComplete(x0, y0, x1, y1);
+            if (!isDrawingComplete)
             {
-                break;
+                UpdateLinePosition(ref x0, ref y0, ref error, deltaX, deltaY, stepX, stepY);
             }
-
-            UpdateLinePosition(ref x0, ref y0, ref error, deltaX, deltaY, stepX, stepY);
         }
     }
 

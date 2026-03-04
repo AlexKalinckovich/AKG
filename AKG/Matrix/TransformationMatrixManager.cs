@@ -1,6 +1,5 @@
-// ================ TransformationMatrixManager.cs ================
 
-using AKG.Model;
+using System.Numerics;
 using AKG.Render.Constants;
 using AKG.Render.States;
 
@@ -8,23 +7,19 @@ namespace AKG.Matrix;
 
 public class TransformationMatrixManager
 {
-    /*
-     * 
-     */
-    
     private readonly CameraState _cameraState;
     private readonly ModelState _modelState;
     private readonly int _viewportWidth;
     private readonly int _viewportHeight;
 
-    private Matrix4 _modelMatrix;
-    private Matrix4 _viewMatrix;
-    private Matrix4 _projectionMatrix;
+    private Matrix4x4 _modelMatrix;
+    private Matrix4x4 _viewMatrix;
+    private Matrix4x4 _projectionMatrix;
     private bool _areMatricesDirty = true;
 
-    public TransformationMatrixManager(CameraState cameraState, 
-                                       ModelState modelState, 
-                                       int viewportWidth, 
+    public TransformationMatrixManager(CameraState cameraState,
+                                       ModelState modelState,
+                                       int viewportWidth,
                                        int viewportHeight)
     {
         _cameraState = cameraState;
@@ -43,31 +38,30 @@ public class TransformationMatrixManager
         if (_areMatricesDirty)
         {
             UpdateModelMatrix();
-
             UpdateViewMatrix();
-
             UpdateProjectionMatrix();
-
             _areMatricesDirty = false;
         }
     }
 
     private void UpdateModelMatrix()
     {
-        Matrix4 translationToCenter = Matrix4.Translate(-_modelState.Center.X, -_modelState.Center.Y, -_modelState.Center.Z);
         
-        Matrix4 scale = Matrix4.Scale(_modelState.Scale, _modelState.Scale, _modelState.Scale);
+        Matrix4x4 translationToCenter = Matrix4x4.CreateTranslation(-_modelState.Center.X, -_modelState.Center.Y, -_modelState.Center.Z);
         
-        Matrix4 rotation = Matrix4.RotateY(_cameraState.RotationY) * Matrix4.RotateX(_cameraState.RotationX);
+        Matrix4x4 scale = Matrix4x4.CreateScale(_modelState.Scale);
+        
+        Matrix4x4 rotation = Matrix4x4.CreateRotationY(_cameraState.RotationY) * Matrix4x4.CreateRotationX(_cameraState.RotationX);
         
         _modelMatrix = rotation * scale * translationToCenter;
     }
 
     private void UpdateViewMatrix()
     {
-        _viewMatrix = Matrix4.LookAt(
-            _cameraState.EyePosition,
-            _cameraState.TargetPosition,
+        
+        _viewMatrix = Matrix4x4.CreateLookAt(
+            _cameraState.EyePosition, 
+            _cameraState.TargetPosition, 
             _cameraState.UpDirection
         );
     }
@@ -75,8 +69,7 @@ public class TransformationMatrixManager
     private void UpdateProjectionMatrix()
     {
         float aspectRatio = (float)_viewportWidth / _viewportHeight;
-        
-        _projectionMatrix = Matrix4.Perspective(
+        _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
             RenderConstants.DefaultFieldOfView,
             aspectRatio,
             RenderConstants.DefaultZNearClippingPlane,
@@ -84,7 +77,7 @@ public class TransformationMatrixManager
         );
     }
 
-    public Matrix4 ModelMatrix => _modelMatrix;
-    public Matrix4 ViewMatrix => _viewMatrix;
-    public Matrix4 ProjectionMatrix => _projectionMatrix;
+    public Matrix4x4 ModelMatrix => _modelMatrix;
+    public Matrix4x4 ViewMatrix => _viewMatrix;
+    public Matrix4x4 ProjectionMatrix => _projectionMatrix;
 }
