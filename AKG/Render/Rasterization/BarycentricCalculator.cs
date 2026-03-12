@@ -1,4 +1,5 @@
 using System.Windows;
+using AKG.Model;
 using AKG.Render.Constants;
 
 namespace AKG.Render.Rasterization;
@@ -7,28 +8,40 @@ namespace AKG.Render.Rasterization;
 public sealed class BarycentricCalculator
 {
     private const float Equal = 1f / 3f;
-    public void ComputeBarycentricCoordinates(
-        int x, int y, 
-        Point point0, Point point1, Point point2,
-        out float weight0, out float weight1, out float weight2)
+    public TriangleWeight ComputeBarycentricCoordinates(int x, int y, Triangle triangle)
     {
-        double area = CalculateTriangleArea(point0, point1, point2);
+        double area = CalculateTriangleArea(triangle);
+
+        float weight0 = 0f;
+        float weight1 = 0f;
+        float weight2 = 0f;
         
         if (Math.Abs(area) < RasterizationConstants.BarycentricEpsilon)
         {
             weight0 = Equal;
             weight1 = Equal;
             weight2 = Equal;
-            return;
         }
-
-        weight0 = (float)CalculateWeight(point1, point2, x, y, area);
-        weight1 = (float)CalculateWeight(point2, point0, x, y, area);
-        weight2 = 1 - weight0 - weight1;
+        else
+        {
+            Point point0 = triangle.Vertex0.ScreenPoint;
+            Point point1 = triangle.Vertex1.ScreenPoint;
+            Point point2 = triangle.Vertex2.ScreenPoint;
+            
+            weight0 = (float)CalculateWeight(point1, point2, x, y, area);
+            weight1 = (float)CalculateWeight(point2, point0, x, y, area);
+            weight2 = 1 - weight0 - weight1;   
+        }
+        
+        return new TriangleWeight(weight0, weight1, weight2);
     }
 
-    private double CalculateTriangleArea(Point point0, Point point1, Point point2)
+    private double CalculateTriangleArea(Triangle triangle)
     {
+        Point point0 = triangle.Vertex0.ScreenPoint;
+        Point point1 = triangle.Vertex1.ScreenPoint;
+        Point point2 = triangle.Vertex2.ScreenPoint;
+        
         return (point1.Y - point2.Y) * (point0.X - point2.X) +
                (point2.X - point1.X) * (point0.Y - point2.Y);
     }
@@ -39,8 +52,12 @@ public sealed class BarycentricCalculator
                 (pointB.X - pointA.X) * (y - pointB.Y)) / area;
     }
 
-    public bool IsPointInTriangle(int x, int y, Point point0, Point point1, Point point2)
+    public bool IsPointInTriangle(int x, int y, Triangle triangle)
     {
+        Point point0 = triangle.Vertex0.ScreenPoint;
+        Point point1 = triangle.Vertex1.ScreenPoint;
+        Point point2 = triangle.Vertex2.ScreenPoint;
+        
         double sign1 = CalculateCrossProduct(point0, point1, x, y);
         double sign2 = CalculateCrossProduct(point1, point2, x, y);
         double sign3 = CalculateCrossProduct(point2, point0, x, y);

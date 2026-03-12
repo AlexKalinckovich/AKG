@@ -34,6 +34,7 @@ public sealed class TriangleRasterizer
 
     public void Rasterize(VertexData vertex0, VertexData vertex1, VertexData vertex2, Vector3 cameraPosition)
     {
+        Triangle triangle = new Triangle(vertex0, vertex1, vertex2);
         Point point0 = vertex0.ScreenPoint;
         Point point1 = vertex1.ScreenPoint;
         Point point2 = vertex2.ScreenPoint;
@@ -47,43 +48,61 @@ public sealed class TriangleRasterizer
         {
             for (int x = minX; x <= maxX; x++)
             {
-                ProcessPixel(x, y, point0, point1, point2, vertex0, vertex1, vertex2, cameraPosition);
+                ProcessPixel(x, y, triangle, cameraPosition);
             }
         }
     }
 
-    private void ProcessPixel(
-        int x, int y,
-        Point point0, Point point1, Point point2,
-        VertexData vertex0, VertexData vertex1, VertexData vertex2,
-        Vector3 cameraPosition)
+    private void ProcessPixel(int x, int y, Triangle triangle, Vector3 cameraPosition)
     {
-        if (!_barycentricCalculator.IsPointInTriangle(x, y, point0, point1, point2))
+        if (_barycentricCalculator.IsPointInTriangle(x, y, triangle))
         {
-            return;
+            RasterizePointInTriangle(x, y, triangle, cameraPosition);
         }
+    }
 
-        _barycentricCalculator.ComputeBarycentricCoordinates(
-            x, y, point0, point1, point2,
-            out float weight0, out float weight1, out float weight2);
+    private void RasterizePointInTriangle(int x, int y, Triangle triangle, Vector3 cameraPosition)
+    {
+        TriangleWeight triangleWeight = _barycentricCalculator.ComputeBarycentricCoordinates(x, y, triangle);
 
-        float depth = weight0 * vertex0.Depth + weight1 * vertex1.Depth + weight2 * vertex2.Depth;
+        float depth = triangleWeight.Weight0 * triangle.Vertex0.Depth +
+                      triangleWeight.Weight1 * triangle.Vertex1.Depth +
+                      triangleWeight.Weight2 * triangle.Vertex2.Depth;
 
-        if (!_zBufferManager.ShouldUpdatePixel(x, y, depth))
+        if (_zBufferManager.ShouldUpdatePixel(x, y, depth))
         {
-            return;
+            _zBufferManager.UpdateDepth(x, y, depth);
+            
+            Vector3 interpolatedNormal = CalculateInterpolatedNormal(triangle, triangleWeight);
+
+            Vector3 interpolatedWorldPos = CalculateInterpolatedWorldPos(triangle, triangleWeight);
+
+            UpdatePixelLightColor(x, y, interpolatedNormal, interpolatedWorldPos, cameraPosition);
         }
+    }
 
-        _zBufferManager.UpdateDepth(x, y, depth);
-
-        Vector3 interpolatedNormal = weight0 * vertex0.Normal + weight1 * vertex1.Normal + weight2 * vertex2.Normal;
-        Vector3 interpolatedWorldPos = weight0 * vertex0.WorldPosition + 
-                                        weight1 * vertex1.WorldPosition + 
-                                        weight2 * vertex2.WorldPosition;
-
+    private void UpdatePixelLightColor(int x, int y, Vector3 interpolatedNormal, Vector3 interpolatedWorldPos, Vector3 cameraPosition)
+    {
+        
         uint pixelColor = _lightingCalculator.CalculatePixelColor(interpolatedWorldPos, interpolatedNormal, cameraPosition);
 
         _pixelDrawer.Draw(x, y, pixelColor);
+    }
+
+    private static Vector3 CalculateInterpolatedWorldPos(Triangle triangle, TriangleWeight triangleWeight)
+    {
+        Vector3 interpolatedWorldPos = triangleWeight.Weight0 * triangle.Vertex0.WorldPosition +
+                                       triangleWeight.Weight1 * triangle.Vertex1.WorldPosition +
+                                       triangleWeight.Weight2 * triangle.Vertex2.WorldPosition;
+        return interpolatedWorldPos;
+    }
+
+    private static Vector3 CalculateInterpolatedNormal(Triangle triangle, TriangleWeight triangleWeight)
+    {
+        Vector3 interpolatedNormal = triangleWeight.Weight0 * triangle.Vertex0.Normal +
+                                     triangleWeight.Weight1 * triangle.Vertex1.Normal +
+                                     triangleWeight.Weight2 * triangle.Vertex2.Normal;
+        return interpolatedNormal;
     }
 
     private int CalculateMinX(Point point0, Point point1, Point point2)

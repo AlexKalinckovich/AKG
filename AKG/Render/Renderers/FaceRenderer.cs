@@ -47,7 +47,6 @@ public sealed class FaceRenderer : IDisposable
         int verticesCount,
         Vector3 cameraPosition)
     {
-        Console.WriteLine($"Vertex count: {verticesCount}, length: {vertices.Length}");
         _zBufferManager.Clear();
 
         if (faces.Count > RenderConstants.LineDrawingThreshold)

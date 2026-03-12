@@ -22,8 +22,10 @@ public sealed class DiffuseLightCalculator
     public Vector3 Calculate(Vector3 worldPosition, Vector3 normal)
     {
         Vector3 lightDirection = Vector3.Normalize(_lightPosition - worldPosition);
+        
         float diffuseFactor = Math.Max(Vector3.Dot(normal, lightDirection), 0f);
         
         return _diffuseCoefficient * diffuseFactor * _lightColor;
     }
+    
 }

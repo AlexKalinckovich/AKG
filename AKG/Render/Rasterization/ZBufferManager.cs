@@ -37,6 +37,5 @@ public sealed class ZBufferManager : IDisposable
     }
 
     public void Dispose()
-    {
-    }
+    { }
 }

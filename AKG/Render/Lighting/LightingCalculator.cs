@@ -21,31 +21,34 @@ public sealed class LightingCalculator
     }
 
     public uint CalculatePixelColor(
-        Vector3 worldPosition, 
-        Vector3 normal, 
+        Vector3 interpolatedWorldPosition, 
+        Vector3 interpolatedNormal, 
         Vector3 cameraPosition)
     {
-        normal = Vector3.Normalize(normal);
+        interpolatedNormal = Vector3.Normalize(interpolatedNormal);
 
         Vector3 ambient = _ambientCalculator.Calculate();
-        Vector3 diffuse = _diffuseCalculator.Calculate(worldPosition, normal);
-        Vector3 specular = _specularCalculator.Calculate(worldPosition, normal, cameraPosition);
+        
+        Vector3 diffuse = _diffuseCalculator.Calculate(interpolatedWorldPosition, interpolatedNormal);
+        
+        Vector3 specular = _specularCalculator.Calculate(interpolatedWorldPosition, interpolatedNormal, cameraPosition);
 
         Vector3 finalColor = ambient + diffuse + specular;
-        finalColor = Vector3.Clamp(finalColor, Vector3.Zero, Vector3.One);
+        
+        finalColor = Vector3.Clamp(finalColor, min: Vector3.Zero, max: Vector3.One);
 
         return ConvertToUIntColor(finalColor);
     }
 
     private uint ConvertToUIntColor(Vector3 color)
     {
-        byte red = (byte)(color.X * RasterizationConstants.MaxColorValue);
+        byte red   = (byte)(color.X * RasterizationConstants.MaxColorValue);
         byte green = (byte)(color.Y * RasterizationConstants.MaxColorValue);
-        byte blue = (byte)(color.Z * RasterizationConstants.MaxColorValue);
+        byte blue  = (byte)(color.Z * RasterizationConstants.MaxColorValue);
 
         return (uint)((RasterizationConstants.MaxColorValue << RasterizationConstants.AlphaChannelShift) |
-                      (red << RasterizationConstants.RedChannelShift) |
+                      (red   << RasterizationConstants.RedChannelShift) |
                       (green << RasterizationConstants.GreenChannelShift) |
-                      (blue << RasterizationConstants.BlueChannelShift));
+                      (blue  << RasterizationConstants.BlueChannelShift));
     }
 }

@@ -25,10 +25,13 @@ public sealed class SpecularLightCalculator
     public Vector3 Calculate(Vector3 worldPosition, Vector3 normal, Vector3 cameraPosition)
     {
         Vector3 lightDirection = Vector3.Normalize(_lightPosition - worldPosition);
+        
         Vector3 viewDirection = Vector3.Normalize(cameraPosition - worldPosition);
+        
         Vector3 reflectDirection = CalculateReflection(lightDirection, normal);
         
         float specularFactor = Math.Max(Vector3.Dot(reflectDirection, viewDirection), 0f);
+        
         specularFactor = (float)Math.Pow(specularFactor, _shininess);
         
         return _specularCoefficient * specularFactor * _specularColor;

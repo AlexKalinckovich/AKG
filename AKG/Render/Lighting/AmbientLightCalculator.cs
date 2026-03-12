@@ -11,6 +11,7 @@ public sealed class AmbientLightCalculator
     public AmbientLightCalculator(float ambientCoefficient, Vector3 ambientLightColor)
     {
         _ambientCoefficient = ambientCoefficient;
+        
         _ambientLightColor = ambientLightColor;
     }
 
