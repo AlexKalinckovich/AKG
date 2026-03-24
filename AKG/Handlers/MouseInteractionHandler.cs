@@ -46,7 +46,9 @@ public class MouseInteractionHandler
     public void HandleMouseWheel(int delta)
     {
         float zoomChange = delta * RenderConstants.MouseWheelZoomFactor * _cameraState.Zoom;
+        
         _cameraState.ModifyZoom(zoomChange);
+        
         MarkMatricesAsDirty();
     }
 

@@ -119,7 +119,7 @@ public sealed class FaceRenderer : IDisposable
         {
             return;
         }
-
+        
         if (!_frustumCuller.IsTriangleInFrustum(vertex0.ClipPosition, vertex1.ClipPosition, vertex2.ClipPosition))
         {
             return;

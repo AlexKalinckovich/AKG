@@ -17,6 +17,10 @@ public class TransformationMatrixManager
     private Matrix4x4 _projectionMatrix;
     private bool _areMatricesDirty = true;
 
+    public Matrix4x4 ModelMatrix => _modelMatrix;
+    public Matrix4x4 ViewMatrix => _viewMatrix;
+    public Matrix4x4 ProjectionMatrix => _projectionMatrix;
+    
     public TransformationMatrixManager(CameraState cameraState,
                                        ModelState modelState,
                                        int viewportWidth,
@@ -38,8 +42,11 @@ public class TransformationMatrixManager
         if (_areMatricesDirty)
         {
             UpdateModelMatrix();
+            
             UpdateViewMatrix();
+            
             UpdateProjectionMatrix();
+            
             _areMatricesDirty = false;
         }
     }
@@ -58,7 +65,6 @@ public class TransformationMatrixManager
 
     private void UpdateViewMatrix()
     {
-        
         _viewMatrix = Matrix4x4.CreateLookAt(
             _cameraState.EyePosition, 
             _cameraState.TargetPosition, 
@@ -76,8 +82,4 @@ public class TransformationMatrixManager
             RenderConstants.DefaultZFarClippingPlane
         );
     }
-
-    public Matrix4x4 ModelMatrix => _modelMatrix;
-    public Matrix4x4 ViewMatrix => _viewMatrix;
-    public Matrix4x4 ProjectionMatrix => _projectionMatrix;
 }
