@@ -3,35 +3,55 @@ using System.Windows;
 using AKG.Model;
 using AKG.Render.Drawing;
 using AKG.Render.Lighting;
+using AKG.Render.Renderers;
 
 namespace AKG.Render.Rasterization;
 
 
 public sealed class TriangleRasterizer
 {
-    private readonly int _width;
-    private readonly int _height;
+    private readonly int _bitmapPixelWidth;
+    private readonly int _bitmapPixelHeight;
     private readonly ZBufferManager _zBufferManager;
     private readonly BarycentricCalculator _barycentricCalculator;
     private readonly LightingCalculator _lightingCalculator;
     private readonly PixelDrawer _pixelDrawer;
 
+    public TriangleRasterizer(int bitmapPixelWidth, int bitmapPixelHeight, BitmapRenderer bitmapRenderer)
+    {
+        _bitmapPixelWidth = bitmapPixelWidth;
+        _bitmapPixelHeight = bitmapPixelHeight;
+        
+        _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculator();
+        
+        _barycentricCalculator = new BarycentricCalculator();
+        
+        _pixelDrawer = new PixelDrawer(bitmapRenderer, bitmapPixelWidth, bitmapPixelHeight);
+        
+        _zBufferManager = new ZBufferManager(_bitmapPixelWidth, _bitmapPixelHeight);
+    }
+    
     public TriangleRasterizer(
-        int width,
-        int height,
+        int bitmapPixelWidth,
+        int bitmapPixelHeight,
         ZBufferManager zBufferManager,
         BarycentricCalculator barycentricCalculator,
         LightingCalculator lightingCalculator,
         PixelDrawer pixelDrawer)
     {
-        _width = width;
-        _height = height;
+        _bitmapPixelWidth = bitmapPixelWidth;
+        _bitmapPixelHeight = bitmapPixelHeight;
         _zBufferManager = zBufferManager;
         _barycentricCalculator = barycentricCalculator;
         _lightingCalculator = lightingCalculator;
         _pixelDrawer = pixelDrawer;
     }
 
+    public void ClearZBuffer()
+    {
+        _zBufferManager.Clear();
+    }
+    
     public void Rasterize(VertexData vertex0, VertexData vertex1, VertexData vertex2, Vector3 cameraPosition)
     {
         Triangle triangle = new Triangle(vertex0, vertex1, vertex2);
@@ -105,23 +125,35 @@ public sealed class TriangleRasterizer
         return interpolatedNormal;
     }
 
-    private int CalculateMinX(Point point0, Point point1, Point point2)
+    private static int CalculateMinX(Point point0, Point point1, Point point2)
     {
-        return (int)Math.Max(0, Math.Floor(Math.Min(point0.X, Math.Min(point1.X, point2.X))));
+        double minX = Math.Min(point0.X, Math.Min(point1.X, point2.X));
+        double flooredMinX = Math.Floor(minX);
+        double clampedMinX = Math.Max(0, flooredMinX);
+        return (int)clampedMinX;
     }
 
     private int CalculateMaxX(Point point0, Point point1, Point point2)
     {
-        return (int)Math.Min(_width - 1, Math.Ceiling(Math.Max(point0.X, Math.Max(point1.X, point2.X))));
+        double maxX = Math.Max(point0.X, Math.Max(point1.X, point2.X));
+        double ceiledMaxX = Math.Ceiling(maxX);
+        double clampedMaxX = Math.Min(_bitmapPixelWidth - 1, ceiledMaxX);
+        return (int)clampedMaxX;
     }
 
-    private int CalculateMinY(Point point0, Point point1, Point point2)
+    private static int CalculateMinY(Point point0, Point point1, Point point2)
     {
-        return (int)Math.Max(0, Math.Floor(Math.Min(point0.Y, Math.Min(point1.Y, point2.Y))));
+        double minY = Math.Min(point0.Y, Math.Min(point1.Y, point2.Y));
+        double flooredMinY = Math.Floor(minY);
+        double clampedMinY = Math.Max(0, flooredMinY);
+        return (int)clampedMinY;
     }
 
     private int CalculateMaxY(Point point0, Point point1, Point point2)
     {
-        return (int)Math.Min(_height - 1, Math.Ceiling(Math.Max(point0.Y, Math.Max(point1.Y, point2.Y))));
+        double maxY = Math.Max(point0.Y, Math.Max(point1.Y, point2.Y));
+        double ceiledMaxY = Math.Ceiling(maxY);
+        double clampedMaxY = Math.Min(_bitmapPixelHeight - 1, ceiledMaxY);
+        return (int)clampedMaxY;
     }
 }

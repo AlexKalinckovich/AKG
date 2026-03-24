@@ -27,13 +27,13 @@ public class ObjRenderer
         _cameraState = new CameraState();
         _modelState = new ModelState(Model);
         
-        int width = bitmap.PixelWidth;
-        int height = bitmap.PixelHeight;
+        int bitmapPixelWidth = bitmap.PixelWidth;
+        int bitmapPixelHeight = bitmap.PixelHeight;
         
-        _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, width, height);
-        _vertexTransformer = new VertexTransformer(_matrixManager, width, height);
+        _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, bitmapPixelWidth, bitmapPixelHeight);
+        _vertexTransformer = new VertexTransformer(_matrixManager, bitmapPixelWidth, bitmapPixelHeight);
         _bitmapRenderer = new BitmapRenderer(bitmap);
-        _faceRenderer = new FaceRenderer(_bitmapRenderer, width, height);
+        _faceRenderer = new FaceRenderer(_bitmapRenderer, bitmapPixelWidth, bitmapPixelHeight);
         _mouseHandler = new MouseInteractionHandler(_cameraState, _matrixManager);
     }
 

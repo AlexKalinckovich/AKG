@@ -3,8 +3,6 @@ using AKG.Core.Model;
 using AKG.Model;
 using AKG.Render.Constants;
 using AKG.Render.Culling;
-using AKG.Render.Drawing;
-using AKG.Render.Lighting;
 using AKG.Render.Rasterization;
 using AKG.Render.Validation;
 
@@ -16,27 +14,15 @@ public sealed class FaceRenderer : IDisposable
     private readonly FrustumCuller _frustumCuller;
     private readonly TriangleValidator _triangleValidator;
     private readonly TriangleRasterizer _triangleRasterizer;
-    private readonly ZBufferManager _zBufferManager;
 
-    public FaceRenderer(
-        BitmapRenderer bitmapRenderer, 
-        int width, 
-        int height)
+    public FaceRenderer(BitmapRenderer bitmapRenderer, int bitmapPixelWidth, int bitmapPixelHeight)
     {
-        _zBufferManager = new ZBufferManager(width, height);
-        
-        LightingCalculator lightingCalculator = LightCalculatorBuilder.CreateLightingCalculator();
-        
-        BarycentricCalculator barycentricCalculator = new BarycentricCalculator();
-        
-        PixelDrawer pixelDrawer = new PixelDrawer(bitmapRenderer, width, height);
-        
-        _triangleRasterizer = new TriangleRasterizer(
-            width, height, _zBufferManager, barycentricCalculator, 
-            lightingCalculator, pixelDrawer);
+        _triangleRasterizer = new TriangleRasterizer(bitmapPixelWidth, bitmapPixelHeight, bitmapRenderer);
         
         _faceCullingStrategy = new FaceCullingStrategy();
+        
         _frustumCuller = new FrustumCuller();
+        
         _triangleValidator = new TriangleValidator();
     }
 
@@ -47,7 +33,7 @@ public sealed class FaceRenderer : IDisposable
         int verticesCount,
         Vector3 cameraPosition)
     {
-        _zBufferManager.Clear();
+        _triangleRasterizer.ClearZBuffer();
 
         if (faces.Count > RenderConstants.LineDrawingThreshold)
         {
@@ -135,7 +121,7 @@ public sealed class FaceRenderer : IDisposable
 
     public void Dispose()
     {
-        _zBufferManager.Dispose();
+        _triangleRasterizer.ClearZBuffer();
     }
 }
 /*
