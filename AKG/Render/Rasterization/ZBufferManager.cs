@@ -1,3 +1,5 @@
+using System.Windows;
+
 namespace AKG.Render.Rasterization;
 
 
@@ -26,13 +28,19 @@ public sealed class ZBufferManager : IDisposable
         }
     }
 
-    public bool ShouldUpdatePixel(int x, int y, float depth)
+    public bool ShouldUpdatePixel(Point pixel, float depth)
     {
+        int x = (int)pixel.X;
+        int y = (int)pixel.Y;
+        
         return depth < _zBuffer[x, y];
     }
 
-    public void UpdateDepth(int x, int y, float depth)
+    public void UpdateDepth(Point pixel, float depth)
     {
+        int x = (int)pixel.X;
+        int y = (int)pixel.Y;
+        
         _zBuffer[x, y] = depth;
     }
 

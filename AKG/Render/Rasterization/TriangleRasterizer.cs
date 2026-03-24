@@ -13,7 +13,6 @@ public sealed class TriangleRasterizer
     private readonly int _bitmapPixelWidth;
     private readonly int _bitmapPixelHeight;
     private readonly ZBufferManager _zBufferManager;
-    private readonly BarycentricCalculator _barycentricCalculator;
     private readonly LightingCalculator _lightingCalculator;
     private readonly PixelDrawer _pixelDrawer;
 
@@ -24,8 +23,6 @@ public sealed class TriangleRasterizer
         
         _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculator();
         
-        _barycentricCalculator = new BarycentricCalculator();
-        
         _pixelDrawer = new PixelDrawer(bitmapRenderer, bitmapPixelWidth, bitmapPixelHeight);
         
         _zBufferManager = new ZBufferManager(_bitmapPixelWidth, _bitmapPixelHeight);
@@ -35,14 +32,12 @@ public sealed class TriangleRasterizer
         int bitmapPixelWidth,
         int bitmapPixelHeight,
         ZBufferManager zBufferManager,
-        BarycentricCalculator barycentricCalculator,
         LightingCalculator lightingCalculator,
         PixelDrawer pixelDrawer)
     {
         _bitmapPixelWidth = bitmapPixelWidth;
         _bitmapPixelHeight = bitmapPixelHeight;
         _zBufferManager = zBufferManager;
-        _barycentricCalculator = barycentricCalculator;
         _lightingCalculator = lightingCalculator;
         _pixelDrawer = pixelDrawer;
     }
@@ -68,44 +63,53 @@ public sealed class TriangleRasterizer
         {
             for (int x = minX; x <= maxX; x++)
             {
-                ProcessPixel(x, y, triangle, cameraPosition);
+                Point point = new Point(x, y);
+                ProcessPixel(point, triangle, cameraPosition);
             }
         }
     }
 
-    private void ProcessPixel(int x, int y, Triangle triangle, Vector3 cameraPosition)
+    private void ProcessPixel(Point point, Triangle triangle, Vector3 cameraPosition)
     {
-        if (_barycentricCalculator.IsPointInTriangle(x, y, triangle))
+        if (BarycentricCalculator.IsPointInTriangle(point, triangle))
         {
-            RasterizePointInTriangle(x, y, triangle, cameraPosition);
+            RasterizePointInTriangle(point, triangle, cameraPosition);
         }
     }
 
-    private void RasterizePointInTriangle(int x, int y, Triangle triangle, Vector3 cameraPosition)
+    private void RasterizePointInTriangle(Point pointInTriangle, Triangle triangle, Vector3 cameraPosition)
     {
-        TriangleWeight triangleWeight = _barycentricCalculator.ComputeBarycentricCoordinates(x, y, triangle);
+        TriangleWeight triangleWeight = BarycentricCalculator.ComputeBarycentricCoordinates(pointInTriangle, triangle);
 
         float depth = triangleWeight.Weight0 * triangle.Vertex0.Depth +
                       triangleWeight.Weight1 * triangle.Vertex1.Depth +
                       triangleWeight.Weight2 * triangle.Vertex2.Depth;
 
-        if (_zBufferManager.ShouldUpdatePixel(x, y, depth))
+        if (_zBufferManager.ShouldUpdatePixel(pointInTriangle, depth))
         {
-            _zBufferManager.UpdateDepth(x, y, depth);
-            
-            Vector3 interpolatedNormal = CalculateInterpolatedNormal(triangle, triangleWeight);
+            _zBufferManager.UpdateDepth(pointInTriangle, depth);
 
-            Vector3 interpolatedWorldPos = CalculateInterpolatedWorldPos(triangle, triangleWeight);
+            uint pixelColor = CalculatePixelColor(triangle, triangleWeight, cameraPosition);
 
-            UpdatePixelLightColor(x, y, interpolatedNormal, interpolatedWorldPos, cameraPosition);
+            UpdatePixelLightColor(pointInTriangle, pixelColor);
         }
     }
 
-    private void UpdatePixelLightColor(int x, int y, Vector3 interpolatedNormal, Vector3 interpolatedWorldPos, Vector3 cameraPosition)
+    private uint CalculatePixelColor(Triangle triangle, TriangleWeight triangleWeight, Vector3 cameraPosition)
     {
+        Vector3 interpolatedNormal = CalculateInterpolatedNormal(triangle, triangleWeight);
+
+        Vector3 interpolatedWorldPos = CalculateInterpolatedWorldPos(triangle, triangleWeight);
         
         uint pixelColor = _lightingCalculator.CalculatePixelColor(interpolatedWorldPos, interpolatedNormal, cameraPosition);
-
+        
+        return pixelColor;
+    }
+    private void UpdatePixelLightColor(Point pixel, uint pixelColor)
+    {
+        int x = (int) pixel.X;
+        int y = (int) pixel.Y;
+        
         _pixelDrawer.Draw(x, y, pixelColor);
     }
 
