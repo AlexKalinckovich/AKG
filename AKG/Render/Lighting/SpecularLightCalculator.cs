@@ -37,7 +37,18 @@ public sealed class SpecularLightCalculator
         return _specularCoefficient * specularFactor * _specularColor;
     }
 
-    private Vector3 CalculateReflection(Vector3 incident, Vector3 normal)
+    public Vector3 Calculate_V2(Vector3 lightDirection, Vector3 viewDirection, Vector3 normal)
+    {
+        Vector3 reflectDirection = CalculateReflection(lightDirection, normal);
+        
+        float specularFactor = Math.Max(Vector3.Dot(reflectDirection, viewDirection), 0f);
+        
+        specularFactor = (float)Math.Pow(specularFactor, _shininess);
+        
+        return _specularCoefficient * specularFactor * _specularColor;
+    }
+    
+    private static Vector3 CalculateReflection(Vector3 incident, Vector3 normal)
     {
         return incident - 2 * Vector3.Dot(incident, normal) * normal;
     }

@@ -9,6 +9,7 @@ public sealed class DiffuseLightCalculator
     private readonly Vector3 _lightColor;
     private readonly Vector3 _lightPosition;
 
+    public Vector3 LightPosition => _lightPosition;    
     public DiffuseLightCalculator(
         float diffuseCoefficient, 
         Vector3 lightColor, 
@@ -27,5 +28,11 @@ public sealed class DiffuseLightCalculator
         
         return _diffuseCoefficient * diffuseFactor * _lightColor;
     }
-    
+
+    public Vector3 Calculate_V2(Vector3 lightDirection, Vector3 normal)
+    {
+        float diffuseFactor = Math.Max(Vector3.Dot(normal, lightDirection), 0f);
+        
+        return _diffuseCoefficient * diffuseFactor * _lightColor;
+    }
 }
