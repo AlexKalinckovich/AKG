@@ -1,6 +1,6 @@
 using System.Numerics;
 using AKG.Render.Constants;
-using AKG.Render.Textures;
+using AKG.Render.Texture;
 
 namespace AKG.Render.Lighting;
 
@@ -32,8 +32,7 @@ public sealed class LightingCalculator
             Vector2.Zero,
             null,
             null,
-            null
-        );
+            null);
     }
 
     public uint CalculatePixelColor(
@@ -45,12 +44,56 @@ public sealed class LightingCalculator
         Texture2D? normalMap,
         Texture2D? specularMap)
     {
-        Vector3 normal = interpolatedNormal;
+        Vector3 normal = GetNormal(interpolatedNormal, uvCoordinates, normalMap);
+
+        Vector3 lightDirection = Vector3.Normalize(_diffuseCalculator.LightPosition - interpolatedWorldPosition);
+        Vector3 viewDirection = Vector3.Normalize(cameraPosition - interpolatedWorldPosition);
+
+        Vector3 diffuseColor = GetDiffuseColor(uvCoordinates, diffuseMap);
+
+        Vector3 ambient = _ambientCalculator.Calculate(diffuseColor);
+
+        Vector3 diffuse = _diffuseCalculator.Calculate_V2(lightDirection, normal, diffuseColor);
+
+        float specularIntensity = LightingConstants.SpecularCoefficient;
+
+        if (specularMap != null)
+        {
+            Vector3 specularColor = specularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+            specularIntensity = specularColor.X;
+        }
+
+        Vector3 specular = _specularCalculator.Calculate_V2(lightDirection, viewDirection, normal, specularIntensity);
+
+        Vector3 finalColor = ambient + diffuse + specular;
+        
+        finalColor = Vector3.Clamp(finalColor, Vector3.Zero, Vector3.One);
+
+        return ConvertToUIntColor(finalColor);
+    }
+
+    private static Vector3 GetDiffuseColor(Vector2 uvCoordinates, Texture2D? diffuseMap)
+    {
+        Vector3 diffuseColor = Vector3.One;
+
+        if (diffuseMap != null)
+        {
+            diffuseColor = diffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+        }
+
+        return diffuseColor;
+    }
+
+    private static Vector3 GetNormal(Vector3 interpolatedNormal, Vector2 uvCoordinates, Texture2D? normalMap)
+    {
+        Vector3 normal;
 
         if (normalMap != null)
         {
             Vector3 normalFromTexture = normalMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+            
             normal = normalFromTexture * 2.0f - Vector3.One;
+            
             normal = Vector3.Normalize(normal);
         }
         else
@@ -58,31 +101,7 @@ public sealed class LightingCalculator
             normal = Vector3.Normalize(interpolatedNormal);
         }
 
-        Vector3 lightDirection = Vector3.Normalize(
-            _diffuseCalculator.LightPosition - interpolatedWorldPosition);
-        Vector3 viewDirection = Vector3.Normalize(
-            cameraPosition - interpolatedWorldPosition);
-
-        Vector3 diffuseColor = diffuseMap != null
-            ? diffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y)
-            : Vector3.One;
-
-        Vector3 ambient = _ambientCalculator.Calculate(diffuseColor);
-
-        Vector3 diffuse = _diffuseCalculator.Calculate_V2(
-            lightDirection, normal, diffuseColor);
-
-        float specularIntensity = specularMap != null
-            ? specularMap.Sample(uvCoordinates.X, uvCoordinates.Y).X
-            : LightingConstants.SpecularCoefficient;
-
-        Vector3 specular = _specularCalculator.Calculate_V2(
-            lightDirection, viewDirection, normal, specularIntensity);
-
-        Vector3 finalColor = ambient + diffuse + specular;
-        finalColor = Vector3.Clamp(finalColor, Vector3.Zero, Vector3.One);
-
-        return ConvertToUIntColor(finalColor);
+        return normal;
     }
 
     private uint ConvertToUIntColor(Vector3 color)

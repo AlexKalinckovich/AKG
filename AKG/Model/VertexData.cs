@@ -11,4 +11,5 @@ public struct VertexData
     public Point ScreenPoint;
     public float Depth;
     public Vector3 Normal;
+    public Vector2 UV;
 }

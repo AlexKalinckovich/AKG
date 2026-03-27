@@ -2,7 +2,6 @@ namespace AKG.Render.Texture;
 
 using System.Numerics;
 
-
 public sealed class Texture2D
 {
     private readonly Vector3[,] _pixels;
@@ -86,7 +85,7 @@ public sealed class Texture2D
         return Vector3.Lerp(c0, c1, dy);
     }
 
-    public static Texture2D CreateFromColors(int width, int height, uint[] colors)
+    public static Texture2D CreateCheckerboard(int width, int height, int tileSize, Vector3 color1, Vector3 color2)
     {
         Vector3[,] pixels = new Vector3[width, height];
 
@@ -94,22 +93,45 @@ public sealed class Texture2D
         {
             for (int x = 0; x < width; x++)
             {
-                int index = y * width + x;
-                if (index < colors.Length)
-                {
-                    uint color = colors[index];
+                int tileX = x / tileSize;
+                int tileY = y / tileSize;
 
-                    byte r = (byte)((color >> 16) & 0xFF);
-                    byte g = (byte)((color >> 8) & 0xFF);
-                    byte b = (byte)(color & 0xFF);
+                bool isEven = (tileX + tileY) % 2 == 0;
+                pixels[x, y] = isEven ? color1 : color2;
+            }
+        }
 
-                    const float maxColorValue = 255.0f;
-                    pixels[x, y] = new Vector3(
-                        r / maxColorValue,
-                        g / maxColorValue,
-                        b / maxColorValue
-                    );
-                }
+        return new Texture2D(width, height, pixels);
+    }
+
+    public static Texture2D CreateGradient(int width, int height, bool horizontal)
+    {
+        Vector3[,] pixels = new Vector3[width, height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float t = horizontal ? (float)x / width : (float)y / height;
+                pixels[x, y] = new Vector3(t, t, t);
+            }
+        }
+
+        return new Texture2D(width, height, pixels);
+    }
+
+    public static Texture2D CreateColorGradient(int width, int height)
+    {
+        Vector3[,] pixels = new Vector3[width, height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float u = (float)x / width;
+                float v = (float)y / height;
+
+                pixels[x, y] = new Vector3(u, v, 0.5f);
             }
         }
 
@@ -131,13 +153,58 @@ public sealed class Texture2D
         return new Texture2D(width, height, pixels);
     }
 
-    public static Texture2D CreateNormalMapDefault(int width, int height)
+    public static Texture2D CreateNormalMapFlat(int width, int height)
     {
-        Vector3 defaultNormal = new Vector3(0.0f, 0.0f, 1.0f);
+        Vector3 defaultNormal = new Vector3(0.5f, 0.5f, 1.0f);
         return CreateSolidColor(width, height, defaultNormal);
     }
 
-    public static Texture2D CreateSpecularMapDefault(int width, int height, float intensity)
+    public static Texture2D CreateNormalMapBumped(int width, int height, float bumpIntensity)
+    {
+        Vector3[,] pixels = new Vector3[width, height];
+        float centerX = width / 2.0f;
+        float centerY = height / 2.0f;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float dx = (x - centerX) / width;
+                float dy = (y - centerY) / height;
+                float dist = (float)Math.Sqrt(dx * dx + dy * dy);
+
+                float nx = -dx * bumpIntensity;
+                float ny = -dy * bumpIntensity;
+                float nz = 1.0f - (float)Math.Sqrt(nx * nx + ny * ny);
+
+                nx = nx * 0.5f + 0.5f;
+                ny = ny * 0.5f + 0.5f;
+                nz = nz * 0.5f + 0.5f;
+
+                pixels[x, y] = new Vector3(nx, ny, nz);
+            }
+        }
+
+        return new Texture2D(width, height, pixels);
+    }
+
+    public static Texture2D CreateSpecularMapGradient(int width, int height)
+    {
+        Vector3[,] pixels = new Vector3[width, height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float t = (float)x / width;
+                pixels[x, y] = new Vector3(t, t, t);
+            }
+        }
+
+        return new Texture2D(width, height, pixels);
+    }
+
+    public static Texture2D CreateSpecularMapUniform(int width, int height, float intensity)
     {
         Vector3 color = new Vector3(intensity, intensity, intensity);
         return CreateSolidColor(width, height, color);

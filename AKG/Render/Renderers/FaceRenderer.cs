@@ -4,6 +4,7 @@ using AKG.Model;
 using AKG.Render.Constants;
 using AKG.Render.Culling;
 using AKG.Render.Rasterization;
+using AKG.Render.Texture;
 using AKG.Render.Validation;
 
 namespace AKG.Render.Renderers;
@@ -17,7 +18,17 @@ public sealed class FaceRenderer : IDisposable
 
     public FaceRenderer(BitmapRenderer bitmapRenderer, int bitmapPixelWidth, int bitmapPixelHeight)
     {
-        _triangleRasterizer = new TriangleRasterizer(bitmapPixelWidth, bitmapPixelHeight, bitmapRenderer);
+        Texture2D diffuseMap = TextureLoader.CreateProceduralDiffuseMap();
+        Texture2D normalMap = TextureLoader.CreateProceduralNormalMap();
+        Texture2D specularMap = TextureLoader.CreateProceduralSpecularMap();
+
+        _triangleRasterizer = new TriangleRasterizer(
+            bitmapPixelWidth,
+            bitmapPixelHeight,
+            bitmapRenderer,
+            diffuseMap,
+            normalMap,
+            specularMap);
         
         _faceCullingStrategy = new FaceCullingStrategy();
         
