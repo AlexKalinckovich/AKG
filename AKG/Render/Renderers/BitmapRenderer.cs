@@ -1,5 +1,3 @@
-// ================ BitmapRenderer.cs ================
-
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -9,17 +7,18 @@ namespace AKG.Render.Renderers;
 
 public unsafe class BitmapRenderer
 {
+    public readonly int Width;
+    public readonly int Height;
+    
     private readonly WriteableBitmap _bitmap;
-    private readonly int _width;
-    private readonly int _height;
     private readonly int _stride;
     private readonly byte* _backBuffer;
 
     public BitmapRenderer(WriteableBitmap bitmap)
     {
         _bitmap = bitmap;
-        _width = bitmap.PixelWidth;
-        _height = bitmap.PixelHeight;
+        Width = bitmap.PixelWidth;
+        Height = bitmap.PixelHeight;
         _stride = bitmap.BackBufferStride;
 
         _bitmap.Lock();
@@ -40,7 +39,7 @@ public unsafe class BitmapRenderer
 
     public void EndDrawing()
     {
-        Int32Rect dirtyRect = new Int32Rect(0, 0, _width, _height);
+        Int32Rect dirtyRect = new Int32Rect(0, 0, Width, Height);
         
         _bitmap.AddDirtyRect(dirtyRect);
         
@@ -50,7 +49,7 @@ public unsafe class BitmapRenderer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ClearBitmap()
     {
-        if (_height > RenderConstants.ParallelProcessingThreshold)
+        if (Height > RenderConstants.ParallelProcessingThreshold)
         {
             ClearBitmapInParallel();
         }
@@ -63,7 +62,7 @@ public unsafe class BitmapRenderer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearBitmapInParallel()
     {
-        Parallel.For(0, _height, y =>
+        Parallel.For(0, Height, y =>
         {
             byte* rowPointer = _backBuffer + y * _stride;
             ClearRowUsingUInt(rowPointer);
@@ -73,7 +72,7 @@ public unsafe class BitmapRenderer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearBitmapSequentially()
     {
-        for (int y = 0; y < _height; y++)
+        for (int y = 0; y < Height; y++)
         {
             byte* rowPointer = _backBuffer + y * _stride;
             ClearRowUsingBytes(rowPointer);
@@ -84,7 +83,7 @@ public unsafe class BitmapRenderer
     private void ClearRowUsingUInt(byte* rowPointer)
     {
         uint* uintPointer = (uint*)rowPointer;
-        for (int x = 0; x < _width; x++)
+        for (int x = 0; x < Width; x++)
         {
             uintPointer[x] = RenderConstants.BlackColor;
         }
@@ -93,7 +92,7 @@ public unsafe class BitmapRenderer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearRowUsingBytes(byte* rowPointer)
     {
-        for (int x = 0; x < _width; x++)
+        for (int x = 0; x < Width; x++)
         {
             int offset = x * RenderConstants.BytesPerPixel;
             rowPointer[offset] = 0;
@@ -119,8 +118,8 @@ public unsafe class BitmapRenderer
         int stepY = GetStepDirection(y0, y1);
 
         int error = deltaX - deltaY;
-        int maximumX = _width - 1;
-        int maximumY = _height - 1;
+        int maximumX = Width - 1;
+        int maximumY = Height - 1;
 
         bool isDrawingComplete = false;
         while (!isDrawingComplete)
@@ -178,7 +177,7 @@ public unsafe class BitmapRenderer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, uint color)
     {
-        if (x >= 0 && x < _width && y >= 0 && y < _height)
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
         {
             int offset = y * _stride + x * RenderConstants.BytesPerPixel;
             *(uint*)(_backBuffer + offset) = color;

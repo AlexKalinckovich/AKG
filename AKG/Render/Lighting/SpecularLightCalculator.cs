@@ -19,14 +19,8 @@ public sealed class SpecularLightCalculator
         _specularColor = specularColor;
         _lightPosition = lightPosition;
     }
-
-    public Vector3 Calculate_V2(Vector3 lightDirection, Vector3 viewDirection, Vector3 normal)
-    {
-        return Calculate_V2(lightDirection, viewDirection, normal, 
-            LightingConstants.SpecularCoefficient);
-    }
-
-    public Vector3 Calculate_V2(
+    
+    public Vector3 CalculateSpecular(
         Vector3 lightDirection, 
         Vector3 viewDirection, 
         Vector3 normal, 

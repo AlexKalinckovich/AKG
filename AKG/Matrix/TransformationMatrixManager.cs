@@ -12,15 +12,14 @@ public class TransformationMatrixManager
     private readonly int _viewportWidth;
     private readonly int _viewportHeight;
 
-    private Matrix4x4 _modelMatrix;
-    private Matrix4x4 _viewMatrix;
-    private Matrix4x4 _projectionMatrix;
     private bool _areMatricesDirty = true;
 
-    public Matrix4x4 ModelMatrix => _modelMatrix;
-    public Matrix4x4 ViewMatrix => _viewMatrix;
-    public Matrix4x4 ProjectionMatrix => _projectionMatrix;
-    
+    public Matrix4x4 ModelMatrix { get; private set; }
+
+    public Matrix4x4 ViewMatrix { get; private set; }
+
+    public Matrix4x4 ProjectionMatrix { get; private set; }
+
     public TransformationMatrixManager(CameraState cameraState,
                                        ModelState modelState,
                                        int viewportWidth,
@@ -60,12 +59,12 @@ public class TransformationMatrixManager
         
         Matrix4x4 rotation = Matrix4x4.CreateRotationY(_cameraState.RotationY) * Matrix4x4.CreateRotationX(_cameraState.RotationX);
         
-        _modelMatrix = rotation * scale * translationToCenter;
+        ModelMatrix = rotation * scale * translationToCenter;
     }
 
     private void UpdateViewMatrix()
     {
-        _viewMatrix = Matrix4x4.CreateLookAt(
+        ViewMatrix = Matrix4x4.CreateLookAt(
             _cameraState.EyePosition, 
             _cameraState.TargetPosition, 
             _cameraState.UpDirection
@@ -75,7 +74,7 @@ public class TransformationMatrixManager
     private void UpdateProjectionMatrix()
     {
         float aspectRatio = (float)_viewportWidth / _viewportHeight;
-        _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
+        ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
             RenderConstants.DefaultFieldOfView,
             aspectRatio,
             RenderConstants.DefaultZNearClippingPlane,

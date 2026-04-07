@@ -10,7 +10,7 @@ using AKG.Render.States;
 
 namespace AKG.Render;
 
-public class ObjRenderer
+public sealed class ObjRenderer
 {
    public ObjModel Model { get; set; } = new();
 
@@ -33,7 +33,7 @@ public class ObjRenderer
         _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, bitmapPixelWidth, bitmapPixelHeight);
         _vertexTransformer = new VertexTransformer(_matrixManager, bitmapPixelWidth, bitmapPixelHeight);
         _bitmapRenderer = new BitmapRenderer(bitmap);
-        _faceRenderer = new FaceRenderer(_bitmapRenderer, bitmapPixelWidth, bitmapPixelHeight);
+        _faceRenderer = new FaceRenderer(_bitmapRenderer);
         _mouseHandler = new MouseInteractionHandler(_cameraState, _matrixManager);
     }
 

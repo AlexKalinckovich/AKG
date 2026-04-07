@@ -12,11 +12,7 @@ public sealed class AmbientLightCalculator
         _ambientCoefficient = ambientCoefficient;
         _ambientLightColor = ambientLightColor;
     }
-
-    public Vector3 Calculate()
-    {
-        return _ambientCoefficient * _ambientLightColor;
-    }
+    
 
     public Vector3 Calculate(Vector3 diffuseColor)
     {

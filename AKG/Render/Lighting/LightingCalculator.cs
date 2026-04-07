@@ -1,4 +1,5 @@
 using System.Numerics;
+using AKG.Model;
 using AKG.Render.Constants;
 using AKG.Render.Texture;
 
@@ -20,95 +21,58 @@ public sealed class LightingCalculator
         _specularCalculator = specularCalculator;
     }
 
-    public uint CalculatePixelColor(
-        Vector3 interpolatedWorldPosition,
-        Vector3 interpolatedNormal,
-        Vector3 cameraPosition)
-    {
-        return CalculatePixelColor(
-            interpolatedWorldPosition,
-            interpolatedNormal,
-            cameraPosition,
-            Vector2.Zero,
-            null,
-            null,
-            null);
-    }
 
     public uint CalculatePixelColor(
         Vector3 interpolatedWorldPosition,
-        Vector3 interpolatedNormal,
         Vector3 cameraPosition,
         Vector2 uvCoordinates,
-        Texture2D? diffuseMap,
-        Texture2D? normalMap,
-        Texture2D? specularMap)
+        RenderTextureMaps renderTextureMaps)
     {
-        Vector3 normal = GetNormal(interpolatedNormal, uvCoordinates, normalMap);
+        Vector3 normal = GetNormal(uvCoordinates, renderTextureMaps.NormalMap);
 
         Vector3 lightDirection = Vector3.Normalize(_diffuseCalculator.LightPosition - interpolatedWorldPosition);
+       
         Vector3 viewDirection = Vector3.Normalize(cameraPosition - interpolatedWorldPosition);
 
-        Vector3 diffuseColor = GetDiffuseColor(uvCoordinates, diffuseMap);
+        Vector3 diffuseColor = renderTextureMaps.DiffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
 
         Vector3 ambient = _ambientCalculator.Calculate(diffuseColor);
 
-        Vector3 diffuse = _diffuseCalculator.Calculate_V2(lightDirection, normal, diffuseColor);
+        Vector3 diffuse = _diffuseCalculator.CalculateDiffuseColor(lightDirection, normal, diffuseColor);
 
-        float specularIntensity = LightingConstants.SpecularCoefficient;
+        Vector3 specularColor = renderTextureMaps.SpecularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+            
+        float specularIntensity = specularColor.X;
 
-        if (specularMap != null)
-        {
-            Vector3 specularColor = specularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
-            specularIntensity = specularColor.X;
-        }
+        Vector3 specular = _specularCalculator.CalculateSpecular(lightDirection, viewDirection, normal, specularIntensity);
 
-        Vector3 specular = _specularCalculator.Calculate_V2(lightDirection, viewDirection, normal, specularIntensity);
+        return CalculateFinalColor(ambient, diffuse, specular);
+    }
 
+    private uint CalculateFinalColor(Vector3 ambient, Vector3 diffuse, Vector3 specular)
+    {
         Vector3 finalColor = ambient + diffuse + specular;
         
-        finalColor = Vector3.Clamp(finalColor, Vector3.Zero, Vector3.One);
+        finalColor = Vector3.Clamp(finalColor, min: Vector3.Zero, max: Vector3.One);
 
         return ConvertToUIntColor(finalColor);
     }
 
-    private static Vector3 GetDiffuseColor(Vector2 uvCoordinates, Texture2D? diffuseMap)
+
+    private static Vector3 GetNormal(Vector2 uvCoordinates, Texture2D normalMap)
     {
-        Vector3 diffuseColor = Vector3.One;
-
-        if (diffuseMap != null)
-        {
-            diffuseColor = diffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
-        }
-
-        return diffuseColor;
+        Vector3 normalFromTexture = normalMap.Sample(u: uvCoordinates.X, v: uvCoordinates.Y);
+            
+        Vector3 normal = normalFromTexture * 2.0f - Vector3.One;
+        
+        return Vector3.Normalize(normal);
     }
 
-    private static Vector3 GetNormal(Vector3 interpolatedNormal, Vector2 uvCoordinates, Texture2D? normalMap)
+    private static uint ConvertToUIntColor(Vector3 color)
     {
-        Vector3 normal;
-
-        if (normalMap != null)
-        {
-            Vector3 normalFromTexture = normalMap.Sample(uvCoordinates.X, uvCoordinates.Y);
-            
-            normal = normalFromTexture * 2.0f - Vector3.One;
-            
-            normal = Vector3.Normalize(normal);
-        }
-        else
-        {
-            normal = Vector3.Normalize(interpolatedNormal);
-        }
-
-        return normal;
-    }
-
-    private uint ConvertToUIntColor(Vector3 color)
-    {
-        byte red = (byte)(color.X * RasterizationConstants.MaxColorValue);
+        byte red   = (byte)(color.X * RasterizationConstants.MaxColorValue);
         byte green = (byte)(color.Y * RasterizationConstants.MaxColorValue);
-        byte blue = (byte)(color.Z * RasterizationConstants.MaxColorValue);
+        byte blue  = (byte)(color.Z * RasterizationConstants.MaxColorValue);
 
         return (uint)((RasterizationConstants.MaxColorValue << RasterizationConstants.AlphaChannelShift) |
                       (red << RasterizationConstants.RedChannelShift) |

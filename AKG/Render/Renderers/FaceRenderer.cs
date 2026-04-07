@@ -16,19 +16,13 @@ public sealed class FaceRenderer : IDisposable
     private readonly TriangleValidator _triangleValidator;
     private readonly TriangleRasterizer _triangleRasterizer;
 
-    public FaceRenderer(BitmapRenderer bitmapRenderer, int bitmapPixelWidth, int bitmapPixelHeight)
+    public FaceRenderer(BitmapRenderer bitmapRenderer)
     {
-        Texture2D diffuseMap = TextureLoader.CreateProceduralDiffuseMap();
-        Texture2D normalMap = TextureLoader.CreateProceduralNormalMap();
-        Texture2D specularMap = TextureLoader.CreateProceduralSpecularMap();
-
+        RenderTextureMaps renderMaps = TextureMapLoader.LoadDefaultMaps();
+        
         _triangleRasterizer = new TriangleRasterizer(
-            bitmapPixelWidth,
-            bitmapPixelHeight,
             bitmapRenderer,
-            diffuseMap,
-            normalMap,
-            specularMap);
+            renderMaps);
         
         _faceCullingStrategy = new FaceCullingStrategy();
         
