@@ -11,9 +11,6 @@ namespace AKG.Render.Renderers;
 
 public sealed class FaceRenderer : IDisposable
 {
-    private readonly FaceCullingStrategy _faceCullingStrategy;
-    private readonly FrustumCuller _frustumCuller;
-    private readonly TriangleValidator _triangleValidator;
     private readonly TriangleRasterizer _triangleRasterizer;
 
     public FaceRenderer(BitmapRenderer bitmapRenderer)
@@ -24,11 +21,6 @@ public sealed class FaceRenderer : IDisposable
             bitmapRenderer,
             renderMaps);
         
-        _faceCullingStrategy = new FaceCullingStrategy();
-        
-        _frustumCuller = new FrustumCuller();
-        
-        _triangleValidator = new TriangleValidator();
     }
 
     
@@ -94,34 +86,32 @@ public sealed class FaceRenderer : IDisposable
             int index1 = face[i + 1].VertexIndex;
             int index2 = face[i + 2].VertexIndex;
 
-            if (_triangleValidator.AreVertexIndicesValid(index0, index1, index2, verticesCount))
+            if (TriangleValidator.AreVertexIndicesValid(index0, index1, index2, verticesCount))
             {
-                ProcessTriangle(vertex0: vertices[index0],
-                                vertex1: vertices[index1], 
-                                vertex2: vertices[index2], 
-                                cameraPosition);
+                Triangle triangle = new Triangle(vertices[index0], vertices[index1], vertices[index2]);
+                ProcessTriangle(triangle, cameraPosition);
             }
         }
     }
 
-    private void ProcessTriangle(VertexData vertex0, VertexData vertex1, VertexData vertex2, Vector3 cameraPosition)
+    private void ProcessTriangle(Triangle triangle, Vector3 cameraPosition)
     {
-        if (!_triangleValidator.IsTriangleValid(vertex0, vertex1, vertex2))
+        if (!TriangleValidator.IsTriangleValid(triangle))
         {
             return;
         }
         
-        if (!_frustumCuller.IsTriangleInFrustum(vertex0.ClipPosition, vertex1.ClipPosition, vertex2.ClipPosition))
+        if (!FrustumCuller.IsTriangleInFrustum(triangle))
         {
             return;
         }
 
-        if (!_faceCullingStrategy.IsVisible(vertex0.ViewPosition, vertex1.ViewPosition, vertex2.ViewPosition))
+        if (!FaceCullingStrategy.IsTriangleVisible(triangle))
         {
             return;
         }
 
-        _triangleRasterizer.Rasterize(vertex0, vertex1, vertex2, cameraPosition);
+        _triangleRasterizer.Rasterize(triangle, cameraPosition);
     }
 
     public void Dispose()

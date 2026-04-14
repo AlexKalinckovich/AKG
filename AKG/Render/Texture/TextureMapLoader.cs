@@ -5,9 +5,9 @@ namespace AKG.Render.Texture;
 
 public static class TextureMapLoader
 {
-    private const string DefaultDiffusePath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Color.png";
-    private const string DefaultNormalPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_NormalGL.png";
-    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Roughness.png";
+    private const string DefaultDiffusePath  = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\Spinnen_Bein_tex_COLOR_.jpg";
+    private const string DefaultNormalPath   = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\haar_detail_NRM.jpg";
+    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\Spinnen_Bein_tex_2.jpg";
 
     public static RenderTextureMaps LoadDefaultMaps()
     {
@@ -44,8 +44,8 @@ public static class TextureMapLoader
 
     private static RenderTextureMaps CreateProceduralMaps()
     {
-        Texture2D diffuseMap = ProceduralTextureGenerator.CreateDiffuseMap();
-        Texture2D normalMap = ProceduralTextureGenerator.CreateNormalMap();
+        Texture2D diffuseMap  = ProceduralTextureGenerator.CreateDiffuseMap();
+        Texture2D normalMap   = ProceduralTextureGenerator.CreateNormalMap();
         Texture2D specularMap = ProceduralTextureGenerator.CreateSpecularMap();
         return new RenderTextureMaps(diffuseMap, normalMap, specularMap);
     }

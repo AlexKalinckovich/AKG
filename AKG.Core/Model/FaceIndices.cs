@@ -1,10 +1,10 @@
 namespace AKG.Core.Model;
 
-public struct FaceIndices
+public readonly struct FaceIndices
 {
-    public int VertexIndex;  
-    public int TextureIndex; 
-    public int NormalIndex; 
+    public readonly int VertexIndex;  
+    public readonly int TextureIndex; 
+    public readonly int NormalIndex; 
 
     
     public FaceIndices(int vertexIndex, int textureIndex, int normalIndex)

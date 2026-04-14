@@ -1,12 +1,17 @@
 using System.Numerics;
+using AKG.Model;
 
 namespace AKG.Render.Culling;
 
 
-public sealed class FrustumCuller
+public static class FrustumCuller
 {
-    public bool IsTriangleInFrustum(Vector4 clip0, Vector4 clip1, Vector4 clip2)
+    public static bool IsTriangleInFrustum(Triangle triangle)
     {
+        Vector4 clip0 = triangle.Vertex0.ClipPosition;
+        Vector4 clip1 = triangle.Vertex1.ClipPosition;
+        Vector4 clip2 = triangle.Vertex2.ClipPosition;
+        
         if (AreAllVerticesOutsideLeft(clip0, clip1, clip2)) return false;
         
         if (AreAllVerticesOutsideRight(clip0, clip1, clip2)) return false;
@@ -22,32 +27,32 @@ public sealed class FrustumCuller
         return true;
     }
 
-    private bool AreAllVerticesOutsideLeft(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideLeft(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.X < -v0.W && v1.X < -v1.W && v2.X < -v2.W;
     }
 
-    private bool AreAllVerticesOutsideRight(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideRight(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.X > v0.W && v1.X > v1.W && v2.X > v2.W;
     }
 
-    private bool AreAllVerticesOutsideBottom(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideBottom(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.Y < -v0.W && v1.Y < -v1.W && v2.Y < -v2.W;
     }
 
-    private bool AreAllVerticesOutsideTop(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideTop(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.Y > v0.W && v1.Y > v1.W && v2.Y > v2.W;
     }
 
-    private bool AreAllVerticesOutsideNear(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideNear(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.Z < 0 && v1.Z < 0 && v2.Z < 0;
     }
 
-    private bool AreAllVerticesOutsideFar(Vector4 v0, Vector4 v1, Vector4 v2)
+    private static bool AreAllVerticesOutsideFar(Vector4 v0, Vector4 v1, Vector4 v2)
     {
         return v0.Z > v0.W && v1.Z > v1.W && v2.Z > v2.W;
     }

@@ -15,7 +15,7 @@ public sealed class VertexTransformCalculator
         _screenSpaceConverter = screenSpaceConverter;
     }
 
-    public VertexData Transform(Vector4 vertex,Vector3 normal)
+    public VertexData Transform(Vector4 vertex,Vector3 normal, Vector2 uv)
     {
         Vector3 worldNormal = CalculateWorldNormal(normal);
         
@@ -32,15 +32,11 @@ public sealed class VertexTransformCalculator
             ClipPosition = clipPosition,
             ScreenPoint = screenPoint,
             Depth = clipPosition.W != 0 ? clipPosition.Z / clipPosition.W : 0,
-            Normal = worldNormal
+            Normal = worldNormal,
+            UV = uv
         };
     }
     
-    private Vector3 GetNormal(IReadOnlyList<Vector3> normals, int index)
-    {
-        return normals.Count > 0 ? normals[index] : Vector3.UnitZ;
-    }
-
     private Vector3 CalculateWorldNormal(Vector3 normal)
     {
         Vector3 worldNormal = Vector3.TransformNormal(normal, _matrixManager.ModelMatrix);

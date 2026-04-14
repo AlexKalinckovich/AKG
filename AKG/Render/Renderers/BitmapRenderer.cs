@@ -157,7 +157,7 @@ public unsafe class BitmapRenderer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateLinePosition(ref int x, ref int y, ref int error, int deltaX, int deltaY, int stepX, int stepY)
+    private static void UpdateLinePosition(ref int x, ref int y, ref int error, int deltaX, int deltaY, int stepX, int stepY)
     {
         int doubledError = 2 * error;
 

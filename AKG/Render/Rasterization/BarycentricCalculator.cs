@@ -31,6 +31,10 @@ public static class BarycentricCalculator
             weight0 = (float)CalculateWeight(point1, point2, pointInTriangle, triangleArea);
             weight1 = (float)CalculateWeight(point2, point0, pointInTriangle, triangleArea);
             weight2 = 1 - weight0 - weight1;
+            if (weight2 < 0)
+            {
+                weight2 = 0;
+            }
         }
 
         return new TriangleWeight(weight0, weight1, weight2);
@@ -89,6 +93,7 @@ public static class BarycentricCalculator
 
     public static bool IsPointInTriangle(Point possibleInTrianglePoint, Triangle triangle)
     {
+        
         Point point0 = triangle.Vertex0.ScreenPoint;
         Point point1 = triangle.Vertex1.ScreenPoint;
         Point point2 = triangle.Vertex2.ScreenPoint;
@@ -97,8 +102,15 @@ public static class BarycentricCalculator
         double sign2 = CalculateCrossProduct(point1, point2, possibleInTrianglePoint);
         double sign3 = CalculateCrossProduct(point2, point0, possibleInTrianglePoint);
 
-        return (sign1 >= 0 && sign2 >= 0 && sign3 >= 0) ||
-               (sign1 <= 0 && sign2 <= 0 && sign3 <= 0);
+        bool allNonNegative = sign1 >= -RasterizationConstants.BarycentricEpsilon &&
+                              sign2 >= -RasterizationConstants.BarycentricEpsilon && 
+                              sign3 >= -RasterizationConstants.BarycentricEpsilon;
+        
+        bool allNonPositive = sign1 <= RasterizationConstants.BarycentricEpsilon &&
+                              sign2 <= RasterizationConstants.BarycentricEpsilon && 
+                              sign3 <= RasterizationConstants.BarycentricEpsilon;
+        
+        return allNonNegative || allNonPositive;
     }
 
     private static double CalculateCrossProduct(Point pointA, Point pointB, Point pointC)

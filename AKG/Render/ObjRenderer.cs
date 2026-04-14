@@ -108,7 +108,7 @@ public sealed class ObjRenderer
             
         _matrixManager.UpdateMatricesIfNeeded();
             
-        _vertexTransformer.TransformVertices(Model.Vertices, Model.Normals);
+        _vertexTransformer.TransformVertices(Model);
     }
 
     private void HandleRenderingError(Exception exception)

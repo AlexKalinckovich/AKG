@@ -53,12 +53,11 @@ public sealed class TriangleRasterizer
         _zBufferManager.Clear();
     }
 
-    public void Rasterize(VertexData vertex0, VertexData vertex1, VertexData vertex2, Vector3 cameraPosition)
+    public void Rasterize(Triangle triangle, Vector3 cameraPosition)
     {
-        Triangle triangle = new Triangle(vertex0, vertex1, vertex2);
-        Point point0 = vertex0.ScreenPoint;
-        Point point1 = vertex1.ScreenPoint;
-        Point point2 = vertex2.ScreenPoint;
+        Point point0 = triangle.Vertex0.ScreenPoint;
+        Point point1 = triangle.Vertex1.ScreenPoint;
+        Point point2 = triangle.Vertex2.ScreenPoint;
 
         int minX = CalculateMinX(point0, point1, point2);
         int maxX = CalculateMaxX(point0, point1, point2);

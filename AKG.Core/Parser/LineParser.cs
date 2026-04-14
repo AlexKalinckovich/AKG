@@ -1,5 +1,3 @@
-// ================ LineParser.cs ================
-
 using AKG.Core.Parser.ObjPartParsers;
 using AKG.Core.Parser.ObjPartParsers.Abstraction;
 

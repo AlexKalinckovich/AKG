@@ -33,7 +33,7 @@ public sealed class ScreenSpaceConverter
         return screenPoint;
     }
 
-    private bool IsValidForScreenConversion(Vector4 clipPosition)
+    private static bool IsValidForScreenConversion(Vector4 clipPosition)
     {
         if (IsDepthInvalid(clipPosition))
         {
@@ -46,12 +46,12 @@ public sealed class ScreenSpaceConverter
         return !IsCoordinateOutsideViewableRange(normalizedX, normalizedY);
     }
 
-    private bool IsDepthInvalid(Vector4 clipPosition)
+    private static bool IsDepthInvalid(Vector4 clipPosition)
     {
         return Math.Abs(clipPosition.W) < RenderConstants.DepthDivisionThreshold;
     }
 
-    private bool IsCoordinateOutsideViewableRange(float x, float y)
+    private static bool IsCoordinateOutsideViewableRange(float x, float y)
     {
         float threshold = RenderConstants.CoordinateSystemNormalizationFactor;
         return x < -threshold || x > threshold || y < -threshold || y > threshold;

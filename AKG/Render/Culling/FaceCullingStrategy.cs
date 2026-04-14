@@ -1,17 +1,18 @@
 using System.Numerics;
+using AKG.Model;
 
 namespace AKG.Render.Culling;
 
 
-public sealed class FaceCullingStrategy
+public static class FaceCullingStrategy
 {
-    public bool IsVisible(Vector3 vertex0, Vector3 vertex1, Vector3 vertex2)
+    public static bool IsTriangleVisible(Triangle triangle)
     {
-        Vector3 edge1 = vertex1 - vertex0;
-        Vector3 edge2 = vertex2 - vertex0;
+        Vector3 edge1 = triangle.Vertex1.ViewPosition - triangle.Vertex2.ViewPosition;
+        Vector3 edge2 = triangle.Vertex2.ViewPosition - triangle.Vertex0.ViewPosition;
         Vector3 normal = Vector3.Cross(edge1, edge2);
         
-        double dotProduct = Vector3.Dot(normal, -vertex0);
+        double dotProduct = Vector3.Dot(normal, -triangle.Vertex0.ViewPosition);
         
         return dotProduct > 0;
     }

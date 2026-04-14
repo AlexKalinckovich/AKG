@@ -6,9 +6,9 @@ namespace AKG.Render.States;
 
 public class CameraState
 {
-    public float RotationX { get; set; }
-    public float RotationY { get; set; }
-    public float Zoom { get; set; } = RenderConstants.InitialZoom;
+    public float RotationX { get; private set; }
+    public float RotationY { get; private set; }
+    public float Zoom { get; private set; } = RenderConstants.InitialZoom;
     public float OffsetX { get; set; }
     public float OffsetY { get; set; }
 

@@ -1,6 +1,6 @@
 using System.Drawing;
 using System.Numerics;
-
+using Bitmap = System.Drawing.Bitmap;
 namespace AKG.Render.Texture;
 
 public static class TextureFileReader
