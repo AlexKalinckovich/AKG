@@ -10,7 +10,7 @@ public sealed class LightingCalculator
     private readonly AmbientLightCalculator _ambientCalculator;
     private readonly DiffuseLightCalculator _diffuseCalculator;
     private readonly SpecularLightCalculator _specularCalculator;
-
+    public RenderTextureMaps TextureMaps { get; set; }
     public LightingCalculator(
         AmbientLightCalculator ambientCalculator,
         DiffuseLightCalculator diffuseCalculator,
@@ -19,28 +19,29 @@ public sealed class LightingCalculator
         _ambientCalculator = ambientCalculator;
         _diffuseCalculator = diffuseCalculator;
         _specularCalculator = specularCalculator;
+
+        TextureMaps = ProceduralTextureGenerator.CreateDefaultTextureMap();
     }
 
 
     public uint CalculatePixelColor(
         Vector3 interpolatedWorldPosition,
         Vector3 cameraPosition,
-        Vector2 uvCoordinates,
-        RenderTextureMaps renderTextureMaps)
+        Vector2 uvCoordinates)
     {
-        Vector3 normal = GetNormal(uvCoordinates, renderTextureMaps.NormalMap);
+        Vector3 normal = GetNormal(uvCoordinates, TextureMaps.NormalMap);
 
         Vector3 lightDirection = Vector3.Normalize(_diffuseCalculator.LightPosition - interpolatedWorldPosition);
        
         Vector3 viewDirection = Vector3.Normalize(cameraPosition - interpolatedWorldPosition);
 
-        Vector3 diffuseColor = renderTextureMaps.DiffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+        Vector3 diffuseColor = TextureMaps.DiffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
 
         Vector3 ambient = _ambientCalculator.Calculate(diffuseColor);
 
         Vector3 diffuse = _diffuseCalculator.CalculateDiffuseColor(lightDirection, normal, diffuseColor);
 
-        Vector3 specularColor = renderTextureMaps.SpecularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+        Vector3 specularColor = TextureMaps.SpecularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
             
         float specularIntensity = specularColor.X;
 

@@ -1,9 +1,10 @@
-using System.Numerics;
 using AKG.Core.Model;
 using AKG.Model;
+using AKG.Model.Vertex;
 using AKG.Render.Constants;
 using AKG.Render.Culling;
 using AKG.Render.Rasterization;
+using AKG.Render.States;
 using AKG.Render.Texture;
 using AKG.Render.Validation;
 
@@ -12,73 +13,60 @@ namespace AKG.Render.Renderers;
 public sealed class FaceRenderer : IDisposable
 {
     private readonly TriangleRasterizer _triangleRasterizer;
-
-    public FaceRenderer(BitmapRenderer bitmapRenderer)
+    
+    public FaceRenderer(BitmapRenderer bitmapRenderer, CameraState cameraState)
     {
         RenderTextureMaps renderMaps = TextureMapLoader.LoadDefaultMaps();
         
-        _triangleRasterizer = new TriangleRasterizer(
-            bitmapRenderer,
-            renderMaps);
-        
+        _triangleRasterizer = new TriangleRasterizer(bitmapRenderer, cameraState, renderMaps);
     }
 
     
-    public void RenderFaces(
-        IReadOnlyList<FaceIndices[]> faces, 
-        VertexData[] vertices, 
-        int verticesCount,
-        Vector3 cameraPosition)
+    public void RenderFaces(IReadOnlyList<FaceIndices[]> faces, ReadOnlyMemory<VertexData> vertices)
     {
         _triangleRasterizer.ClearZBuffer();
 
         if (faces.Count > RenderConstants.LineDrawingThreshold)
         {
-            RenderFacesInParallel(faces, vertices, verticesCount, cameraPosition);
+            RenderFacesInParallel(faces, vertices);
         }
         else
         {
-            RenderFacesSequentially(faces, vertices, verticesCount, cameraPosition);
+            RenderFacesSequentially(faces, vertices.Span);
         }
     }
 
     private void RenderFacesInParallel(
         IReadOnlyList<FaceIndices[]> faces, 
-        VertexData[] vertices, 
-        int verticesCount,
-        Vector3 cameraPosition)
+        ReadOnlyMemory<VertexData> vertices)
     {
-        Parallel.For(0, faces.Count, index =>
+        Parallel.For(0, faces.Count, body: (int index) =>
         {
-            RenderSingleFace(faces[index], vertices, verticesCount, cameraPosition);
+            RenderSingleFace(faces[index], vertices.Span);
         });
     }
 
     private void RenderFacesSequentially(
         IReadOnlyList<FaceIndices[]> faces, 
-        VertexData[] vertices, 
-        int verticesCount,
-        Vector3 cameraPosition)
+        ReadOnlySpan<VertexData> vertices)
     {
         foreach (FaceIndices[] face in faces)
         {
-            RenderSingleFace(face, vertices, verticesCount, cameraPosition);
+            RenderSingleFace(face, vertices);
         }
     }
 
     private void RenderSingleFace(
         FaceIndices[] face, 
-        VertexData[] vertices, 
-        int verticesCount,
-        Vector3 cameraPosition)
+        ReadOnlySpan<VertexData> vertices)
     {
         if (face.Length > 2)
         {
-            RenderTriangle(face, vertices, verticesCount, cameraPosition);
+            RenderTriangle(face, vertices);
         }
     }
 
-    private void RenderTriangle(FaceIndices[] face, VertexData[] vertices, int verticesCount, Vector3 cameraPosition)
+    private void RenderTriangle(FaceIndices[] face, ReadOnlySpan<VertexData> vertices)
     {
         for (int i = 0; i < face.Length - 2; i++)
         {
@@ -86,15 +74,15 @@ public sealed class FaceRenderer : IDisposable
             int index1 = face[i + 1].VertexIndex;
             int index2 = face[i + 2].VertexIndex;
 
-            if (TriangleValidator.AreVertexIndicesValid(index0, index1, index2, verticesCount))
+            if (TriangleValidator.AreVertexIndicesValid(index0, index1, index2, vertices.Length))
             {
                 Triangle triangle = new Triangle(vertices[index0], vertices[index1], vertices[index2]);
-                ProcessTriangle(triangle, cameraPosition);
+                ProcessTriangle(triangle);
             }
         }
     }
 
-    private void ProcessTriangle(Triangle triangle, Vector3 cameraPosition)
+    private void ProcessTriangle(Triangle triangle)
     {
         if (!TriangleValidator.IsTriangleValid(triangle))
         {
@@ -111,7 +99,7 @@ public sealed class FaceRenderer : IDisposable
             return;
         }
 
-        _triangleRasterizer.Rasterize(triangle, cameraPosition);
+        _triangleRasterizer.Rasterize(triangle);
     }
 
     public void Dispose()

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Windows;
 using AKG.Model;
+using AKG.Model.Vertex;
 
 namespace AKG.Matrix;
 
@@ -8,33 +9,37 @@ public sealed class VertexTransformCalculator
 {
     private readonly TransformationMatrixManager _matrixManager;
     private readonly ScreenSpaceConverter _screenSpaceConverter;
+
     public VertexTransformCalculator(TransformationMatrixManager matrixManager, 
-                                     ScreenSpaceConverter screenSpaceConverter)
+                                     int viewportWidth, int viewportHeight)
     {
         _matrixManager = matrixManager;
-        _screenSpaceConverter = screenSpaceConverter;
+        _screenSpaceConverter = new ScreenSpaceConverter(viewportWidth, viewportHeight);
+
     }
 
     public VertexData Transform(Vector4 vertex,Vector3 normal, Vector2 uv)
     {
         Vector3 worldNormal = CalculateWorldNormal(normal);
         
-        Vector4 worldPosition = Vector4.Transform(vertex, _matrixManager.ModelMatrix);
-        Vector4 viewPosition = Vector4.Transform(worldPosition, _matrixManager.ViewMatrix);
+        Vector3 vec3Vertex = new Vector3(vertex.X, vertex.Y, vertex.Z);
+        
+        Vector3 worldPosition = Vector3.Transform(vec3Vertex, _matrixManager.ModelMatrix);
+        Vector3 viewPosition = Vector3.Transform(worldPosition, _matrixManager.ViewMatrix);
         Vector4 clipPosition = Vector4.Transform(viewPosition, _matrixManager.ProjectionMatrix);
+        
         
         Point screenPoint = _screenSpaceConverter.ConvertToScreenSpace(clipPosition);
         
-        return new VertexData
-        {
-            WorldPosition = new Vector3(worldPosition.X, worldPosition.Y, worldPosition.Z),
-            ViewPosition = new Vector3(viewPosition.X, viewPosition.Y, viewPosition.Z),
-            ClipPosition = clipPosition,
-            ScreenPoint = screenPoint,
-            Depth = clipPosition.W != 0 ? clipPosition.Z / clipPosition.W : 0,
-            Normal = worldNormal,
-            UV = uv
-        };
+        return new VertexData(
+            worldPosition,
+            viewPosition,
+            clipPosition,
+            screenPoint,
+            clipPosition.W != 0 ? clipPosition.Z / clipPosition.W : 0,
+            worldNormal,
+            uv
+        );
     }
     
     private Vector3 CalculateWorldNormal(Vector3 normal)

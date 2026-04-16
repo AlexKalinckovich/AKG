@@ -19,12 +19,12 @@ public class NormalDataParser
         return new Vector3(0, 0, 0);
     }
 
-    private string[] SplitDataString(string dataString)
+    private static string[] SplitDataString(string dataString)
     {
         return dataString.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
     }
 
-    private bool HasEnoughNormalDataParts(string[] dataParts)
+    private static bool HasEnoughNormalDataParts(string[] dataParts)
     {
         return dataParts.Length >= 3;
     }

@@ -4,6 +4,7 @@ using AKG.Model;
 using AKG.Render.Drawing;
 using AKG.Render.Lighting;
 using AKG.Render.Renderers;
+using AKG.Render.States;
 
 namespace AKG.Render.Rasterization;
 
@@ -15,37 +16,38 @@ public sealed class TriangleRasterizer
     private readonly LightingCalculator _lightingCalculator;
     private readonly PixelDrawer _pixelDrawer;
 
-    private readonly RenderTextureMaps _renderTextureMaps;
+    private readonly CameraState _cameraState;
 
 
-    public TriangleRasterizer(BitmapRenderer bitmapRenderer)
+    public TriangleRasterizer(BitmapRenderer bitmapRenderer, CameraState cameraState)
     {
         _bitmapPixelWidth = bitmapRenderer.Width;
         _bitmapPixelHeight = bitmapRenderer.Height;
 
-        _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculator();
+        _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculatorWithTexture(RenderTextureMaps.CreateDefaultRenderMaps());
 
         _pixelDrawer = new PixelDrawer(bitmapRenderer, _bitmapPixelWidth, _bitmapPixelHeight);
 
         _zBufferManager = new ZBufferManager(_bitmapPixelWidth, _bitmapPixelHeight);
 
-        _renderTextureMaps = RenderTextureMaps.CreateDefaultRenderMaps();
+        _cameraState = cameraState;
     }
 
     public TriangleRasterizer(
         BitmapRenderer bitmapRenderer,
+        CameraState cameraState,
         RenderTextureMaps renderTextureMaps)
     {
         _bitmapPixelWidth = bitmapRenderer.Width;
         _bitmapPixelHeight = bitmapRenderer.Height;
         
-        _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculator();
+        _lightingCalculator = LightCalculatorBuilder.CreateLightingCalculatorWithTexture(renderTextureMaps);
 
         _pixelDrawer = new PixelDrawer(bitmapRenderer, _bitmapPixelWidth, _bitmapPixelHeight);
 
         _zBufferManager = new ZBufferManager(_bitmapPixelWidth, _bitmapPixelHeight);
 
-        _renderTextureMaps = renderTextureMaps;
+        _cameraState = cameraState;
     }
     
     public void ClearZBuffer()
@@ -53,7 +55,7 @@ public sealed class TriangleRasterizer
         _zBufferManager.Clear();
     }
 
-    public void Rasterize(Triangle triangle, Vector3 cameraPosition)
+    public void Rasterize(Triangle triangle)
     {
         Point point0 = triangle.Vertex0.ScreenPoint;
         Point point1 = triangle.Vertex1.ScreenPoint;
@@ -69,23 +71,22 @@ public sealed class TriangleRasterizer
             for (int x = minX; x <= maxX; x++)
             {
                 Point point = new Point(x, y);
-                ProcessPixel(point, triangle, cameraPosition);
+                ProcessPixel(point, triangle);
             }
         }
     }
 
-    private void ProcessPixel(Point point, Triangle triangle, Vector3 cameraPosition)
+    private void ProcessPixel(Point point, Triangle triangle)
     {
         if (BarycentricCalculator.IsPointInTriangle(point, triangle))
         {
-            RasterizePointInTriangle(point, triangle, cameraPosition);
+            RasterizePointInTriangle(point, triangle);
         }
     }
 
-    private void RasterizePointInTriangle(Point pointInTriangle, Triangle triangle, Vector3 cameraPosition)
+    private void RasterizePointInTriangle(Point pointInTriangle, Triangle triangle)
     {
-        TriangleWeight triangleWeight = BarycentricCalculator.ComputeBarycentricCoordinates(
-            pointInTriangle, triangle);
+        TriangleWeight triangleWeight = BarycentricCalculator.ComputeBarycentricCoordinates(pointInTriangle, triangle);
 
         float depth = triangleWeight.Weight0 * triangle.Vertex0.Depth +
                       triangleWeight.Weight1 * triangle.Vertex1.Depth +
@@ -97,21 +98,17 @@ public sealed class TriangleRasterizer
 
             Vector2 uv = BarycentricCalculator.ComputePerspectiveCorrectUv(triangle, triangleWeight);
 
-            uint pixelColor = CalculatePixelColor(triangle, triangleWeight, cameraPosition, uv);
+            uint pixelColor = CalculatePixelColor(triangle, triangleWeight, uv);
 
             UpdatePixelLightColor(pointInTriangle, pixelColor);
         }
     }
 
-    private uint CalculatePixelColor(
-        Triangle triangle,
-        TriangleWeight triangleWeight,
-        Vector3 cameraPosition,
-        Vector2 uv)
+    private uint CalculatePixelColor(Triangle triangle, TriangleWeight triangleWeight, Vector2 uv)
     {
         Vector3 interpolatedWorldPos = CalculateInterpolatedWorldPos(triangle, triangleWeight);
 
-        uint pixelColor = _lightingCalculator.CalculatePixelColor(interpolatedWorldPos, cameraPosition, uv, _renderTextureMaps);
+        uint pixelColor = _lightingCalculator.CalculatePixelColor(interpolatedWorldPos, _cameraState.TargetPosition, uv);
 
         return pixelColor;
     }

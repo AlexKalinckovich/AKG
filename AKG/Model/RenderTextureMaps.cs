@@ -2,7 +2,7 @@ using AKG.Render.Texture;
 
 namespace AKG.Model;
 
-public struct RenderTextureMaps
+public readonly struct RenderTextureMaps
 {
     public Texture2D DiffuseMap { get; init; }
     public Texture2D NormalMap { get; init; }

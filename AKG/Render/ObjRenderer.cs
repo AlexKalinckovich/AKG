@@ -5,6 +5,7 @@ using AKG.Core.Model;
 using AKG.Handlers;
 using AKG.Matrix;
 using AKG.Model;
+using AKG.Model.Vertex;
 using AKG.Render.Renderers;
 using AKG.Render.States;
 
@@ -33,7 +34,7 @@ public sealed class ObjRenderer
         _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, bitmapPixelWidth, bitmapPixelHeight);
         _vertexTransformer = new VertexTransformer(_matrixManager, bitmapPixelWidth, bitmapPixelHeight);
         _bitmapRenderer = new BitmapRenderer(bitmap);
-        _faceRenderer = new FaceRenderer(_bitmapRenderer);
+        _faceRenderer = new FaceRenderer(_bitmapRenderer, _cameraState);
         _mouseHandler = new MouseInteractionHandler(_cameraState, _matrixManager);
     }
 
@@ -94,12 +95,9 @@ public sealed class ObjRenderer
     {
         UpdateScreenState();
 
-        VertexData[] vertices = _vertexTransformer.GetTransformedVertices();
-            
-        int verticesCount = _vertexTransformer.GetTransformedVerticesCount();
-
+        ReadOnlyMemory<VertexData> vertices = _vertexTransformer.TransformVertices(Model);
         
-        _faceRenderer.RenderFaces(Model.Faces, vertices, verticesCount, _cameraState.TargetPosition);
+        _faceRenderer.RenderFaces(Model.Faces, vertices);
     }
 
     private void UpdateScreenState()
@@ -108,17 +106,11 @@ public sealed class ObjRenderer
             
         _matrixManager.UpdateMatricesIfNeeded();
             
-        _vertexTransformer.TransformVertices(Model);
     }
 
     private void HandleRenderingError(Exception exception)
     {
         Console.WriteLine($"Render error: {exception.Message}");
-    }
-
-    public void Dispose()
-    {
-        _vertexTransformer.Dispose();
     }
 
     public void OnMouseDown(Point position)

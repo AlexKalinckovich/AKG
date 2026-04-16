@@ -20,11 +20,11 @@ public class FaceLineParser
         List<FaceIndices> faceIndicesList = new();
 
         ProcessEachFaceLinePart(faceLineParts, faceIndicesList);
-
+        
         return faceIndicesList.ToArray();
     }
 
-    private string[] SplitFaceLineIntoParts(string faceLineString)
+    private static string[] SplitFaceLineIntoParts(string faceLineString)
     {
         return faceLineString.Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
     }

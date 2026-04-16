@@ -6,18 +6,17 @@ namespace AKG.Render.States;
 
 public class CameraState
 {
+    public static Vector3 UpDirection => new(0, 1, 0);
+
     public float RotationX { get; private set; }
     public float RotationY { get; private set; }
     public float Zoom { get; private set; } = RenderConstants.InitialZoom;
-    public float OffsetX { get; set; }
-    public float OffsetY { get; set; }
-
     public Vector3 EyePosition => new(OffsetX, OffsetY, Zoom);
     
     public Vector3 TargetPosition => new(OffsetX, OffsetY, 0);
     
-    public Vector3 UpDirection => new(0, 1, 0);
-
+    private float OffsetX { get; set; }
+    private float OffsetY { get; set; }
     public void ResetToDefault()
     {
         RotationX = 0;

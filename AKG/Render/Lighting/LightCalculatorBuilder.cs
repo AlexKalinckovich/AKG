@@ -1,3 +1,4 @@
+using AKG.Model;
 using AKG.Render.Constants;
 
 namespace AKG.Render.Lighting;
@@ -11,6 +12,13 @@ public static class LightCalculatorBuilder
             CreateDiffuseCalculator(),
             CreateSpecularCalculator()
         );
+    }
+    
+    public static LightingCalculator CreateLightingCalculatorWithTexture(RenderTextureMaps textureMaps)
+    {
+        LightingCalculator calculator = CreateLightingCalculator();
+        calculator.TextureMaps = textureMaps;
+        return calculator;
     }
 
     private static AmbientLightCalculator CreateAmbientCalculator()

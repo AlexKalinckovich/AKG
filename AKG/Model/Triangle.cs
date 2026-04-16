@@ -1,5 +1,4 @@
-using System.Numerics;
-using System.Windows;
+using AKG.Model.Vertex;
 
 namespace AKG.Model;
 

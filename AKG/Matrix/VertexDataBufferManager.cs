@@ -1,30 +1,20 @@
-using AKG.Model;
+using AKG.Model.Vertex;
 
 namespace AKG.Matrix;
 
-public class VertexDataBufferManager : IDisposable
+public sealed class VertexDataBufferManager
 {
-    private VertexData[]? _buffer;
+    private VertexData[] _buffer = [];
     public int CurrentBufferSize { get; private set; }
 
     public VertexData[] GetOrCreateBuffer(int requiredSize)
     {
-        if (_buffer == null || _buffer.Length < requiredSize)
+        if (_buffer.Length < requiredSize)
         {
             _buffer = new VertexData[requiredSize];
         }
 
         CurrentBufferSize = requiredSize;
         return _buffer;
-    }
-
-    public VertexData[] GetBufferArray()
-    {
-        return _buffer!;
-    }
-
-    public void Dispose()
-    {
-        _buffer = null;
     }
 }

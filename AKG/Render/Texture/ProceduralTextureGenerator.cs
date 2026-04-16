@@ -1,4 +1,5 @@
 using System.Numerics;
+using AKG.Model;
 
 namespace AKG.Render.Texture;
 
@@ -6,6 +7,14 @@ public static class ProceduralTextureGenerator
 {
     private const int DefaultSize = 256;
 
+    public static RenderTextureMaps CreateDefaultTextureMap()
+    {
+        return new RenderTextureMaps(
+            CreateDiffuseMap(),
+            CreateNormalMap(),
+            CreateSpecularMap()
+        );
+    }
     public static Texture2D CreateDiffuseMap()
     {
         Vector3 color1 = new Vector3(0.8f, 0.2f, 0.2f);

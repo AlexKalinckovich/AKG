@@ -1,12 +1,10 @@
 using System.Numerics;
-using System.Windows;
 using AKG.Core.Model;
-using AKG.Model;
-using AKG.Render.Constants;
+using AKG.Model.Vertex;
 
 namespace AKG.Matrix;
 
-public sealed class VertexTransformer : IDisposable
+public sealed class VertexTransformer
 {
     private readonly VertexTransformCalculator _transformCalculator;
     private readonly VertexDataBufferManager _bufferManager;
@@ -16,34 +14,20 @@ public sealed class VertexTransformer : IDisposable
         int viewportWidth,
         int viewportHeight)
     {
-        ScreenSpaceConverter screenConverter = new ScreenSpaceConverter(viewportWidth, viewportHeight);
-        _transformCalculator = new VertexTransformCalculator(matrixManager, screenConverter);
+        _transformCalculator = new VertexTransformCalculator(matrixManager, viewportWidth, viewportHeight);
         _bufferManager = new VertexDataBufferManager();
     }
 
-    public void TransformVertices(in ObjModel model)
+    public ReadOnlyMemory<VertexData> TransformVertices(in ObjModel model)
     {
         int vertexCount = model.Vertices.Count;
+        
         VertexData[] vertexBuffer = _bufferManager.GetOrCreateBuffer(vertexCount);
 
         ProcessVertices(model, vertexBuffer);
-    }
 
-    public VertexData[] GetTransformedVertices()
-    {
-        return _bufferManager.GetBufferArray();
+        return new ReadOnlyMemory<VertexData>(vertexBuffer, start: 0, length: vertexCount);
     }
-
-    public int GetTransformedVerticesCount()
-    {
-        return _bufferManager.CurrentBufferSize;
-    }
-
-    public void Dispose()
-    {
-        _bufferManager.Dispose();
-    }
-    
     private void ProcessVertices(
         ObjModel model,
         VertexData[] buffer)
@@ -53,10 +37,19 @@ public sealed class VertexTransformer : IDisposable
         
         Parallel.For(0, vertexCount, index =>
         {
-            Vector3 normal = GetNormal(model.Normals,index);
+            int faceArrayIndex = index / 3;
+            int faceCellIndex = index % 3;
+            
+            int textureIndex = model.Faces[faceArrayIndex][faceCellIndex].TextureIndex;
+            int normalIndex = model.Faces[faceArrayIndex][faceCellIndex].NormalIndex;
+            
+            Vector3 normal = GetNormal(model.Normals,normalIndex);
+            
             Vector4 vertex = GetVertex(model.Vertices, index);
-            Vector2 textureCoords = GetTextureCoordinate(model.TextureCoords, index);
-            buffer[index] = _transformCalculator.Transform(vertex, normal, textureCoords);
+            
+            Vector2 textureCoords = GetTextureCoordinate(model.TextureCoords, textureIndex);
+            
+            buffer[index] = _transformCalculator.Transform(vertex, normal, textureCoords);  
         });
     }
     

@@ -67,7 +67,7 @@ public class TransformationMatrixManager
         ViewMatrix = Matrix4x4.CreateLookAt(
             _cameraState.EyePosition, 
             _cameraState.TargetPosition, 
-            _cameraState.UpDirection
+            CameraState.UpDirection
         );
     }
 
