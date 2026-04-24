@@ -65,7 +65,6 @@ public static class TestModelGenerator
         };
         
         currentObjModel.AddVertices(vertices);
-        currentObjModel.AddFaces(faces);
 
         return currentObjModel;
     }

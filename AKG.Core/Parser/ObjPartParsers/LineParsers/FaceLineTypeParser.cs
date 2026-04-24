@@ -1,5 +1,6 @@
 using AKG.Core.Model;
 using AKG.Core.Parser.ObjPartParsers.Abstraction;
+using AKG.Model;
 
 namespace AKG.Core.Parser.ObjPartParsers.LineParsers;
 
@@ -12,14 +13,15 @@ public class FaceLineTypeParser : ILineTypeParser
     public void ParseLine(string line, PartialModelData partialModelData)
     {
         string dataString = ExtractDataSubstringFromLine(line);
-        FaceIndices[] faceIndices = _faceLineParser.ParseFaceLineString(dataString);
-        
-        if (faceIndices.Length >= 3)
+        try
         {
-            partialModelData.Faces.Add(faceIndices);
+            Face face = _faceLineParser.ParseFaceLineString(dataString);
+            partialModelData.Faces.Add(face);
         }
-        
-        partialModelData.TotalFacesProcessed++;
+        finally
+        {
+            partialModelData.TotalFacesProcessed++;
+        }
     }
 
     private string ExtractDataSubstringFromLine(string line)

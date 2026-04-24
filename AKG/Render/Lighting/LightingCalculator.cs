@@ -1,6 +1,7 @@
 using System.Numerics;
 using AKG.Model;
 using AKG.Render.Constants;
+using AKG.Render.Rasterization;
 using AKG.Render.Texture;
 
 namespace AKG.Render.Lighting;
@@ -30,18 +31,17 @@ public sealed class LightingCalculator
         Vector2 uvCoordinates)
     {
         Vector3 normal = GetNormal(uvCoordinates, TextureMaps.NormalMap);
-
+    
         Vector3 lightDirection = Vector3.Normalize(_diffuseCalculator.LightPosition - interpolatedWorldPosition);
-       
         Vector3 viewDirection = Vector3.Normalize(cameraPosition - interpolatedWorldPosition);
-
-        Vector3 diffuseColor = TextureMaps.DiffuseMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+    
+        Vector3 diffuseColor = TextureMaps.DiffuseMap.SampleBilinear(uvCoordinates.X, uvCoordinates.Y);
 
         Vector3 ambient = _ambientCalculator.Calculate(diffuseColor);
 
         Vector3 diffuse = _diffuseCalculator.CalculateDiffuseColor(lightDirection, normal, diffuseColor);
 
-        Vector3 specularColor = TextureMaps.SpecularMap.Sample(uvCoordinates.X, uvCoordinates.Y);
+        Vector3 specularColor = TextureMaps.SpecularMap.SampleBilinear(uvCoordinates.X, uvCoordinates.Y);
             
         float specularIntensity = specularColor.X;
 
@@ -62,7 +62,7 @@ public sealed class LightingCalculator
 
     private static Vector3 GetNormal(Vector2 uvCoordinates, Texture2D normalMap)
     {
-        Vector3 normalFromTexture = normalMap.Sample(u: uvCoordinates.X, v: uvCoordinates.Y);
+        Vector3 normalFromTexture = normalMap.SampleBilinear(u: uvCoordinates.X, v: uvCoordinates.Y);
             
         Vector3 normal = normalFromTexture * 2.0f - Vector3.One;
         

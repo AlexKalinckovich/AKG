@@ -5,16 +5,16 @@ namespace AKG.Render.Texture;
 
 public static class TextureMapLoader
 {
-    private const string DefaultDiffusePath  = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\Spinnen_Bein_tex_COLOR_.jpg";
-    private const string DefaultNormalPath   = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\haar_detail_NRM.jpg";
-    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\Spinnen_Bein_tex_2.jpg";
+    private const string DefaultDiffusePath  = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Color.png";
+    private const string DefaultNormalPath   = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_NormalGL.png";
+    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Roughness.png";
 
     public static RenderTextureMaps LoadDefaultMaps()
     {
         return LoadOrDefault(DefaultDiffusePath, DefaultNormalPath, DefaultSpecularPath);
     }
 
-    public static RenderTextureMaps LoadOrDefault(string diffusePath, string normalPath, string specularPath)
+    private static RenderTextureMaps LoadOrDefault(string diffusePath, string normalPath, string specularPath)
     {
         bool hasAllFiles = File.Exists(diffusePath) && File.Exists(normalPath) && File.Exists(specularPath);
         if (hasAllFiles)

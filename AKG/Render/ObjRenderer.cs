@@ -108,7 +108,7 @@ public sealed class ObjRenderer
             
     }
 
-    private void HandleRenderingError(Exception exception)
+    private static void HandleRenderingError(Exception exception)
     {
         Console.WriteLine($"Render error: {exception.Message}");
     }

@@ -1,4 +1,3 @@
-
 using System.Numerics;
 using AKG.Render.Constants;
 using AKG.Render.States;
@@ -15,9 +14,7 @@ public class TransformationMatrixManager
     private bool _areMatricesDirty = true;
 
     public Matrix4x4 ModelMatrix { get; private set; }
-
     public Matrix4x4 ViewMatrix { get; private set; }
-
     public Matrix4x4 ProjectionMatrix { get; private set; }
 
     public TransformationMatrixManager(CameraState cameraState,
@@ -41,22 +38,16 @@ public class TransformationMatrixManager
         if (_areMatricesDirty)
         {
             UpdateModelMatrix();
-            
             UpdateViewMatrix();
-            
             UpdateProjectionMatrix();
-            
             _areMatricesDirty = false;
         }
     }
 
     private void UpdateModelMatrix()
     {
-        
         Matrix4x4 translationToCenter = Matrix4x4.CreateTranslation(-_modelState.Center.X, -_modelState.Center.Y, -_modelState.Center.Z);
-        
         Matrix4x4 scale = Matrix4x4.CreateScale(_modelState.Scale);
-        
         Matrix4x4 rotation = Matrix4x4.CreateRotationY(_cameraState.RotationY) * Matrix4x4.CreateRotationX(_cameraState.RotationX);
         
         ModelMatrix = rotation * scale * translationToCenter;
@@ -74,11 +65,20 @@ public class TransformationMatrixManager
     private void UpdateProjectionMatrix()
     {
         float aspectRatio = (float)_viewportWidth / _viewportHeight;
-        ProjectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
-            RenderConstants.DefaultFieldOfView,
-            aspectRatio,
-            RenderConstants.DefaultZNearClippingPlane,
-            RenderConstants.DefaultZFarClippingPlane
+        float fov = RenderConstants.DefaultFieldOfView;
+        float near = RenderConstants.DefaultZNearClippingPlane;
+        float far = RenderConstants.DefaultZFarClippingPlane;
+        
+        
+        float f = 1.0f / (float)Math.Tan(fov * 0.5f);
+        float rangeInv = 1.0f / (near - far);
+        
+        
+        ProjectionMatrix = new Matrix4x4(
+            f / aspectRatio, 0, 0, 0,                    
+            0, f, 0, 0,                                  
+            0, 0, (near + far) * rangeInv, -1,          
+            0, 0, near * far * 2 * rangeInv, 0           
         );
     }
 }

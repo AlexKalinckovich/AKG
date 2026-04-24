@@ -135,7 +135,7 @@ public unsafe class BitmapRenderer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetStepDirection(int start, int end)
+    private static int GetStepDirection(int start, int end)
     {
         return start < end ? 1 : -1;
     }

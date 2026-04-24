@@ -8,6 +8,7 @@ namespace AKG.Render.Rasterization;
 public static class BarycentricCalculator
 {
     private const float Equal = 1f / 3f;
+    public static bool Logs { get; set; } = false;
 
     public static TriangleWeight ComputeBarycentricCoordinates(Point pointInTriangle, Triangle triangle)
     {
@@ -40,37 +41,41 @@ public static class BarycentricCalculator
         return new TriangleWeight(weight0, weight1, weight2);
     }
 
-    public static Vector2 ComputePerspectiveCorrectUv(Triangle triangle, TriangleWeight weights)
+    
+    public static Vector2 ComputePerspectiveCorrectUv(Triangle triangle, TriangleWeight screenWeights)
     {
-        float z0 = triangle.Vertex0.Depth;
-        float z1 = triangle.Vertex1.Depth;
-        float z2 = triangle.Vertex2.Depth;
-
+        Vector4 clip0 = triangle.Vertex0.ClipPosition;
+        Vector4 clip1 = triangle.Vertex1.ClipPosition;
+        Vector4 clip2 = triangle.Vertex2.ClipPosition;
+        
+        float w0 = clip0.W;
+        float w1 = clip1.W;
+        float w2 = clip2.W;
+        
         Vector2 uv0 = triangle.Vertex0.UV;
         Vector2 uv1 = triangle.Vertex1.UV;
         Vector2 uv2 = triangle.Vertex2.UV;
 
-        float invZ0 = 1.0f / Math.Max(z0, RasterizationConstants.BarycentricEpsilon);
-        float invZ1 = 1.0f / Math.Max(z1, RasterizationConstants.BarycentricEpsilon);
-        float invZ2 = 1.0f / Math.Max(z2, RasterizationConstants.BarycentricEpsilon);
-
-        Vector2 uv0DivZ = uv0 * invZ0;
-        Vector2 uv1DivZ = uv1 * invZ1;
-        Vector2 uv2DivZ = uv2 * invZ2;
-
-        Vector2 uvDivZ = weights.Weight0 * uv0DivZ +
-                         weights.Weight1 * uv1DivZ +
-                         weights.Weight2 * uv2DivZ;
-
-        float invZInterp = weights.Weight0 * invZ0 +
-                           weights.Weight1 * invZ1 +
-                           weights.Weight2 * invZ2;
-
-        float zInterp = 1.0f / Math.Max(invZInterp, RasterizationConstants.BarycentricEpsilon);
-
-        Vector2 uvCorrected = uvDivZ * zInterp;
-
-        return uvCorrected;
+        float invW0 = 1.0f / w0;
+        float invW1 = 1.0f / w1;
+        float invW2 = 1.0f / w2;
+        
+        float total = screenWeights.Weight0 * invW0 + 
+                      screenWeights.Weight1 * invW1 + 
+                      screenWeights.Weight2 * invW2;
+        
+        float u = (screenWeights.Weight0 * uv0.X * invW0 + 
+                   screenWeights.Weight1 * uv1.X * invW1 + 
+                   screenWeights.Weight2 * uv2.X * invW2) / total;
+        
+        float v = (screenWeights.Weight0 * uv0.Y * invW0 + 
+                   screenWeights.Weight1 * uv1.Y * invW1 + 
+                   screenWeights.Weight2 * uv2.Y * invW2) / total;
+        
+        Vector2 result = new Vector2(u, v);
+        
+        
+        return result;
     }
 
     private static double CalculateTriangleArea(Triangle triangle)

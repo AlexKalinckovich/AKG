@@ -5,7 +5,7 @@ namespace AKG.Core.Parser;
 public class ObjParser
 {
     
-    private LineParser _lineParser;
+    private readonly LineParser _lineParser;
 
     
     public ObjParser()

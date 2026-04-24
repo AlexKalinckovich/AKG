@@ -1,4 +1,3 @@
-// ================ RenderConstants.cs ================
 namespace AKG.Render.Constants;
 
 public static class RenderConstants
@@ -14,6 +13,9 @@ public static class RenderConstants
     
     public const float DefaultZNearClippingPlane = 0.1f;
     public const float DefaultZFarClippingPlane = 5000f;
+    
+    public const int PartitionBatchSize = 64;
+    public const int MinimumVerticesPerFace = 3;
     
     public const float DefaultNormalizationFactor = 2.0f;
     

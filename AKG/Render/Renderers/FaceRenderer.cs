@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AKG.Core.Model;
 using AKG.Model;
 using AKG.Model.Vertex;
@@ -7,28 +8,27 @@ using AKG.Render.Rasterization;
 using AKG.Render.States;
 using AKG.Render.Texture;
 using AKG.Render.Validation;
+using System;
 
 namespace AKG.Render.Renderers;
 
 public sealed class FaceRenderer : IDisposable
 {
     private readonly TriangleRasterizer _triangleRasterizer;
-    
+
     public FaceRenderer(BitmapRenderer bitmapRenderer, CameraState cameraState)
     {
         RenderTextureMaps renderMaps = TextureMapLoader.LoadDefaultMaps();
-        
         _triangleRasterizer = new TriangleRasterizer(bitmapRenderer, cameraState, renderMaps);
     }
 
-    
-    public void RenderFaces(IReadOnlyList<FaceIndices[]> faces, ReadOnlyMemory<VertexData> vertices)
+    public void RenderFaces(IReadOnlyList<Face> faces, ReadOnlyMemory<VertexData> vertices)
     {
         _triangleRasterizer.ClearZBuffer();
-
-        if (faces.Count > RenderConstants.LineDrawingThreshold)
+        int faceCount = faces.Count;
+        if (faceCount > RenderConstants.LineDrawingThreshold)
         {
-            RenderFacesInParallel(faces, vertices);
+            RenderFacesInParallel(faces, vertices, faceCount);
         }
         else
         {
@@ -36,69 +36,105 @@ public sealed class FaceRenderer : IDisposable
         }
     }
 
-    private void RenderFacesInParallel(
-        IReadOnlyList<FaceIndices[]> faces, 
-        ReadOnlyMemory<VertexData> vertices)
+    private void RenderFacesInParallel(IReadOnlyList<Face> faces, ReadOnlyMemory<VertexData> vertices, int faceCount)
     {
-        Parallel.For(0, faces.Count, body: (int index) =>
+        int[] offsets = CalculateFaceOffsets(faces, faceCount);
+        ExecuteParallelRendering(faces, vertices, offsets, faceCount);
+    }
+
+    private static int[] CalculateFaceOffsets(IReadOnlyList<Face> faces, int faceCount)
+    {
+        int[] offsets = new int[faceCount];
+        int currentOffset = 0;
+        for (int i = 0; i < faceCount; i++)
         {
-            RenderSingleFace(faces[index], vertices.Span);
+            offsets[i] = currentOffset;
+            currentOffset += faces[i].ActualCount;
+        }
+        return offsets;
+    }
+
+    private void ExecuteParallelRendering(
+        IReadOnlyList<Face> faces, 
+        ReadOnlyMemory<VertexData> vertices,  
+        int[] offsets, 
+        int faceCount)
+    {
+        var partitioner = Partitioner.Create(0, faceCount, RenderConstants.PartitionBatchSize);
+        Parallel.ForEach(partitioner, range =>
+        {
+            ReadOnlySpan<VertexData> span = vertices.Span;
+            RenderFaceRangeSequentially(faces, span, offsets, range.Item1, range.Item2);
         });
     }
 
-    private void RenderFacesSequentially(
-        IReadOnlyList<FaceIndices[]> faces, 
-        ReadOnlySpan<VertexData> vertices)
+    private void RenderFaceRangeSequentially(IReadOnlyList<Face> faces, ReadOnlySpan<VertexData> vertices, int[] offsets, int startIndex, int endIndex)
     {
-        foreach (FaceIndices[] face in faces)
+        for (int i = startIndex; i < endIndex; i++)
         {
-            RenderSingleFace(face, vertices);
+            RenderSingleFace(faces[i], vertices, offsets[i]);
         }
     }
 
-    private void RenderSingleFace(
-        FaceIndices[] face, 
-        ReadOnlySpan<VertexData> vertices)
+    private void RenderFacesSequentially(IReadOnlyList<Face> faces, ReadOnlySpan<VertexData> vertices)
     {
-        if (face.Length > 2)
+        int vertexOffset = 0;
+        int faceCount = faces.Count;
+        for (int i = 0; i < faceCount; i++)
         {
-            RenderTriangle(face, vertices);
+            RenderSingleFace(faces[i], vertices, vertexOffset);
+            vertexOffset += faces[i].ActualCount;
         }
     }
 
-    private void RenderTriangle(FaceIndices[] face, ReadOnlySpan<VertexData> vertices)
+    private void RenderSingleFace(Face face, ReadOnlySpan<VertexData> vertices, int vertexOffset)
     {
-        for (int i = 0; i < face.Length - 2; i++)
-        {
-            int index0 = face[0].VertexIndex;
-            int index1 = face[i + 1].VertexIndex;
-            int index2 = face[i + 2].VertexIndex;
+        int vertexCount = face.ActualCount;
+        if (vertexCount < 3)
+            return;
+        RenderTriangulatedFace(vertices, vertexOffset, vertexCount);
+    }
 
-            if (TriangleValidator.AreVertexIndicesValid(index0, index1, index2, vertices.Length))
-            {
-                Triangle triangle = new Triangle(vertices[index0], vertices[index1], vertices[index2]);
-                ProcessTriangle(triangle);
-            }
+    private void RenderTriangulatedFace(ReadOnlySpan<VertexData> vertices, int vertexOffset, int vertexCount)
+    {
+        for (int i = 0; i < vertexCount - 2; i++)
+        {
+            Triangle triangle = CreateTriangleFromFan(vertices, vertexOffset, i);
+            ProcessTriangle(triangle);
         }
+    }
+
+    private static Triangle CreateTriangleFromFan(ReadOnlySpan<VertexData> vertices, int vertexOffset, int index)
+    {
+        int idx0 = vertexOffset;
+        int idx1 = vertexOffset + index + 1;
+        int idx2 = vertexOffset + index + 2;
+        return new Triangle(vertices[idx0], vertices[idx1], vertices[idx2]);
     }
 
     private void ProcessTriangle(Triangle triangle)
     {
         if (!TriangleValidator.IsTriangleValid(triangle))
-        {
             return;
-        }
-        
+        ProcessFrustumCulling(triangle);
+    }
+
+    private void ProcessFrustumCulling(Triangle triangle)
+    {
         if (!FrustumCuller.IsTriangleInFrustum(triangle))
-        {
             return;
-        }
+        ProcessFaceCulling(triangle);
+    }
 
+    private void ProcessFaceCulling(Triangle triangle)
+    {
         if (!FaceCullingStrategy.IsTriangleVisible(triangle))
-        {
             return;
-        }
+        RasterizeTriangle(triangle);
+    }
 
+    private void RasterizeTriangle(Triangle triangle)
+    {
         _triangleRasterizer.Rasterize(triangle);
     }
 
@@ -107,6 +143,3 @@ public sealed class FaceRenderer : IDisposable
         _triangleRasterizer.ClearZBuffer();
     }
 }
-/*
-         * Вершины в пространстве экрана по трем вершинам найти два ребра (B - A) (C - A) (определитель, перпендикулярное скалярное произведение) ax * by - by *ax
-         */

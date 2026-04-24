@@ -65,10 +65,10 @@ public class IntegrationTests
 
             var parser = new ObjParser();
 
-            // Act
+            
             ObjModel model = await parser.ParseAsync(MockFileLoader());
 
-            // Assert
+            
             Assert.Multiple(() =>
             {
                 Assert.That(model.Vertices, Has.Count.EqualTo(4));
@@ -76,14 +76,14 @@ public class IntegrationTests
                 Assert.That(model.Normals, Has.Count.EqualTo(2));
                 Assert.That(model.Faces, Has.Count.EqualTo(2));
                     
-                // Проверяем первую грань
+                
                 var firstFace = model.Faces[0];
                 Assert.That(firstFace, Has.Length.EqualTo(3));
                     
-                // Проверяем индексы (учитывая, что они начинаются с 0)
-                Assert.That(firstFace[0].VertexIndex, Is.EqualTo(0));
-                Assert.That(firstFace[0].TextureIndex, Is.EqualTo(0));
-                Assert.That(firstFace[0].NormalIndex, Is.EqualTo(0));
+                
+                Assert.That(firstFace.First.VertexIndex, Is.EqualTo(0));
+                Assert.That(firstFace.First.TextureIndex, Is.EqualTo(0));
+                Assert.That(firstFace.First.NormalIndex, Is.EqualTo(0));
             });
         }
         finally
@@ -98,11 +98,11 @@ public class IntegrationTests
     [Test]
     public void FaceIndices_IsEmpty_WorksCorrectly()
     {
-        // Arrange
+        
         var emptyIndices = new FaceIndices();
         var nonEmptyIndices = new FaceIndices(1, 2, 3);
 
-        // Act & Assert
+        
         Assert.Multiple(() =>
         {
             Assert.That(emptyIndices.IsEmpty, Is.True);

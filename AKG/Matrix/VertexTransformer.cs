@@ -1,18 +1,18 @@
 using System.Numerics;
 using AKG.Core.Model;
+using AKG.Model;
 using AKG.Model.Vertex;
 
 namespace AKG.Matrix;
 
 public sealed class VertexTransformer
 {
+    private const uint VertexCountParallelThreshold = 64;
+    
     private readonly VertexTransformCalculator _transformCalculator;
     private readonly VertexDataBufferManager _bufferManager;
 
-    public VertexTransformer(
-        TransformationMatrixManager matrixManager,
-        int viewportWidth,
-        int viewportHeight)
+    public VertexTransformer(TransformationMatrixManager matrixManager, int viewportWidth, int viewportHeight)
     {
         _transformCalculator = new VertexTransformCalculator(matrixManager, viewportWidth, viewportHeight);
         _bufferManager = new VertexDataBufferManager();
@@ -20,51 +20,131 @@ public sealed class VertexTransformer
 
     public ReadOnlyMemory<VertexData> TransformVertices(in ObjModel model)
     {
-        int vertexCount = model.Vertices.Count;
+        int totalCorners = CalculateTotalCorners(model);
         
-        VertexData[] vertexBuffer = _bufferManager.GetOrCreateBuffer(vertexCount);
-
-        ProcessVertices(model, vertexBuffer);
-
-        return new ReadOnlyMemory<VertexData>(vertexBuffer, start: 0, length: vertexCount);
+        VertexData[] vertexBuffer = ProcessVertices(model, totalCorners);
+        
+        return new ReadOnlyMemory<VertexData>(vertexBuffer, 0, totalCorners);
     }
-    private void ProcessVertices(
-        ObjModel model,
-        VertexData[] buffer)
+
+    private static int CalculateTotalCorners(ObjModel model)
     {
-        
-        int vertexCount = model.Vertices.Count;
-        
-        Parallel.For(0, vertexCount, index =>
+        int totalCorners = 0;
+        int faceCount = model.Faces.Count;
+        for (int i = 0; i < faceCount; i++)
         {
-            int faceArrayIndex = index / 3;
-            int faceCellIndex = index % 3;
+            totalCorners += model.Faces[i].ActualCount;
+        }
+        return totalCorners;
+    }
+
+    private VertexData[] ProcessVertices(ObjModel model, int totalCorners)
+    {
+        VertexData[] buffer = _bufferManager.GetOrCreateBuffer(totalCorners);
+        
+        int faceCount = model.Faces.Count;
+        if (faceCount < VertexCountParallelThreshold)
+        {
+            ProcessVerticesSequentially(model, buffer);
+        }
+        else
+        {
+            ProcessVerticesInParallel(model, buffer, faceCount);
+        }
+        return buffer;
+    }
+
+    private void ProcessVerticesSequentially(ObjModel model, VertexData[] buffer)
+    {
+        int bufferIndex = 0;
+        int faceCount = model.Faces.Count;
+        for (int i = 0; i < faceCount; i++)
+        {
+            bufferIndex = ProcessFaceVerticesSequentially(model.Faces[i], model, buffer, bufferIndex);
+        }
+    }
+
+    private int ProcessFaceVerticesSequentially(Face face, ObjModel model, VertexData[] buffer, int bufferIndex)
+    {
+        int vertexCount = face.ActualCount;
+        for (int i = 0; i < vertexCount; i++)
+        {
+            FaceIndices fi = face[i];
             
-            int textureIndex = model.Faces[faceArrayIndex][faceCellIndex].TextureIndex;
-            int normalIndex = model.Faces[faceArrayIndex][faceCellIndex].NormalIndex;
+            buffer[bufferIndex] = TransformSingle(fi, model);
             
-            Vector3 normal = GetNormal(model.Normals,normalIndex);
-            
-            Vector4 vertex = GetVertex(model.Vertices, index);
-            
-            Vector2 textureCoords = GetTextureCoordinate(model.TextureCoords, textureIndex);
-            
-            buffer[index] = _transformCalculator.Transform(vertex, normal, textureCoords);  
+            bufferIndex++;
+        }
+        return bufferIndex;
+    }
+
+    private void ProcessVerticesInParallel(ObjModel model, VertexData[] buffer, int faceCount)
+    {
+        int[] offsets = CalculateVertexOffsets(model, faceCount);
+        ParallelProcessFaceVertices(model, buffer, offsets, faceCount);
+    }
+
+    private static int[] CalculateVertexOffsets(ObjModel model, int faceCount)
+    {
+        int[] offsets = new int[faceCount];
+        int currentOffset = 0;
+        for (int i = 0; i < faceCount; i++)
+        {
+            offsets[i] = currentOffset;
+            currentOffset += model.Faces[i].ActualCount;
+        }
+        return offsets;
+    }
+
+    private void ParallelProcessFaceVertices(ObjModel model, VertexData[] buffer, int[] offsets, int faceCount)
+    {
+        Parallel.For(0, faceCount, i =>
+        {
+            ProcessSingleFaceInParallel(model, buffer, offsets, i);
         });
+    }
+
+    private void ProcessSingleFaceInParallel(ObjModel model, VertexData[] buffer, int[] offsets, int faceIndex)
+    {
+        Face face = model.Faces[faceIndex];
+        int bufferStart = offsets[faceIndex];
+        int vertexCount = face.ActualCount;
+        for (int j = 0; j < vertexCount; j++)
+        {
+            FaceIndices fi = face[j];
+            buffer[bufferStart + j] = TransformSingle(fi, model);
+        }
+    }
+
+    private VertexData TransformSingle(FaceIndices fi, ObjModel model)
+    {
+        Vector3 normal = GetNormal(model.Normals, fi.NormalIndex);
+        
+        Vector4 vertex = GetVertex(model.Vertices, fi.VertexIndex);
+        
+        Vector2 texCoord = GetTextureCoordinate(model.TextureCoords, fi.TextureIndex);
+        
+        return _transformCalculator.Transform(vertex, normal, texCoord);
     }
     
     private static Vector3 GetNormal(IReadOnlyList<Vector3> normals, int index)
     {
-        return index < normals.Count ? normals[index] : Vector3.UnitZ;
-    }
-    
-    private static Vector4 GetVertex(IReadOnlyList<Vector4> vertices, int index)
-    {
-        return index < vertices.Count ? vertices[index] : Vector4.UnitZ;
+        if (index < 0 || index >= normals.Count)
+            return Vector3.UnitZ;
+        return normals[index];
     }
 
-    private static Vector2 GetTextureCoordinate(IReadOnlyList<Vector2> textureCoordinates, int index)
+    private static Vector4 GetVertex(IReadOnlyList<Vector4> vertices, int index)
     {
-        return index < textureCoordinates.Count ? textureCoordinates[index] : Vector2.Zero;
+        if (index < 0 || index >= vertices.Count)
+            return Vector4.UnitW;
+        return vertices[index];
+    }
+
+    private static Vector2 GetTextureCoordinate(IReadOnlyList<Vector2> texCoords, int index)
+    {
+        if (index < 0 || index >= texCoords.Count)
+            return Vector2.Zero;
+        return texCoords[index];
     }
 }

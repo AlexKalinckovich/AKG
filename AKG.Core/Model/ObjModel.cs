@@ -1,18 +1,19 @@
 using System.Numerics;
+using AKG.Model;
 
 namespace AKG.Core.Model;
 
-public class ObjModel
+public sealed class ObjModel
 {
     private readonly List<Vector4> _vertices = new(1000);
     private readonly List<Vector3> _normals = new(1000);
     private readonly List<Vector2> _textureCoords = new(1000);
-    private readonly List<FaceIndices[]> _faces = new(1000);
+    private readonly List<Face> _faces = new(1000);
 
     public IReadOnlyList<Vector4> Vertices => _vertices;
     public IReadOnlyList<Vector3> Normals => _normals;
     public IReadOnlyList<Vector2> TextureCoords => _textureCoords;
-    public IReadOnlyList<FaceIndices[]> Faces => _faces;
+    public IReadOnlyList<Face> Faces => _faces;
 
     public void AddVertices(IEnumerable<Vector4> vertices)
     {
@@ -29,7 +30,7 @@ public class ObjModel
         _textureCoords.AddRange(textureCoords);
     }
 
-    public void AddFaces(IEnumerable<FaceIndices[]> faces)
+    public void AddFaces(IEnumerable<Face> faces)
     {
         _faces.AddRange(faces);
     }

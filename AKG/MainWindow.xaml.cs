@@ -8,6 +8,7 @@ using AKG.Facade;
 using AKG.Handlers;
 using AKG.Matrix;
 using AKG.Render;
+using AKG.Render.Rasterization;
 
 namespace AKG;
 
@@ -116,5 +117,9 @@ public partial class MainWindow : Window
         _renderer.Model = parsedModel;
         _renderer.Render();
     }
-    
+
+    private void BtnTemp_OnClick(object sender, RoutedEventArgs e)
+    {
+        BarycentricCalculator.Logs = !BarycentricCalculator.Logs;
+    }
 }

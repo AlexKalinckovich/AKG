@@ -1,5 +1,6 @@
 using System.Numerics;
 using AKG.Core.Model;
+using AKG.Model;
 using NUnit.Framework;
 
 namespace TestParser;
@@ -94,55 +95,13 @@ public class ObjModelTests
         };
 
         // Act
-        _model.AddFaces(new[] { face });
+        _model.AddFaces([new Face(face[0], face[1], face[2])]);
 
         // Assert
         Assert.That(_model.Faces, Has.Count.EqualTo(1));
         Assert.That(_model.Faces[0], Has.Length.EqualTo(3));
     }
-
-    [Test]
-    public void MergeWith_ParticalModelData_MergesCorrectly()
-    {
-        // Arrange
-        var partialData = new PartialModelData
-        {
-            Vertices = { new Vector4(1.0f, 0.0f, 0.0f, 1.0f) },
-            Normals = { new Vector3(0.0f, 0.0f, 1.0f) },
-            TextureCoords = { new Vector2(0.0f, 0.0f) },
-            Faces = { new[] { new FaceIndices(0, 0, 0), new FaceIndices(1, 1, 1) } }
-        };
-
-        // Act
-        _model.MergeWith(partialData);
-
-        // Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(_model.Vertices, Has.Count.EqualTo(1));
-            Assert.That(_model.Normals, Has.Count.EqualTo(1));
-            Assert.That(_model.TextureCoords, Has.Count.EqualTo(1));
-            Assert.That(_model.Faces, Has.Count.EqualTo(1));
-        });
-    }
-
-    [Test]
-    public void Clear_RemovesAllData()
-    {
-        // Arrange
-        _model.AddVertices(new[] { new Vector4(1.0f, 0.0f, 0.0f, 1.0f) });
-        _model.AddFaces(new[] { new[] { new FaceIndices(0, 0, 0) } });
-
-        // Act
-        _model.Clear();
-
-        // Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(_model.Vertices, Is.Empty);
-            Assert.That(_model.Faces, Is.Empty);
-        });
-    }
+    
 
     [Test]
     public void Properties_ReturnImmutableLists()

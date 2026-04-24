@@ -28,17 +28,17 @@ public class FaceParserTests
         Assert.That(result, Has.Length.EqualTo(3));
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].VertexIndex, Is.EqualTo(0));
-            Assert.That(result[0].TextureIndex, Is.EqualTo(1));
-            Assert.That(result[0].NormalIndex, Is.EqualTo(2));
+            Assert.That(result.First.VertexIndex, Is.EqualTo(0));
+            Assert.That(result.First.TextureIndex, Is.EqualTo(1));
+            Assert.That(result.First.NormalIndex, Is.EqualTo(2));
 
-            Assert.That(result[1].VertexIndex, Is.EqualTo(3));
-            Assert.That(result[1].TextureIndex, Is.EqualTo(4));
-            Assert.That(result[1].NormalIndex, Is.EqualTo(5));
+            Assert.That(result.Second.VertexIndex, Is.EqualTo(3));
+            Assert.That(result.Second.TextureIndex, Is.EqualTo(4));
+            Assert.That(result.Second.NormalIndex, Is.EqualTo(5));
 
-            Assert.That(result[2].VertexIndex, Is.EqualTo(6));
-            Assert.That(result[2].TextureIndex, Is.EqualTo(7));
-            Assert.That(result[2].NormalIndex, Is.EqualTo(8));
+            Assert.That(result.Third.VertexIndex, Is.EqualTo(6));
+            Assert.That(result.Third.TextureIndex, Is.EqualTo(7));
+            Assert.That(result.Third.NormalIndex, Is.EqualTo(8));
         });
     }
 
@@ -55,13 +55,13 @@ public class FaceParserTests
         Assert.That(result, Has.Length.EqualTo(3));
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].VertexIndex, Is.EqualTo(0));
-            Assert.That(result[0].TextureIndex, Is.EqualTo(0));
-            Assert.That(result[0].NormalIndex, Is.EqualTo(0));
+            Assert.That(result.First.VertexIndex, Is.EqualTo(0));
+            Assert.That(result.First.TextureIndex, Is.EqualTo(0));
+            Assert.That(result.First.NormalIndex, Is.EqualTo(0));
 
-            Assert.That(result[1].VertexIndex, Is.EqualTo(1));
-            Assert.That(result[1].TextureIndex, Is.EqualTo(0));
-            Assert.That(result[1].NormalIndex, Is.EqualTo(0));
+            Assert.That(result.Second.VertexIndex, Is.EqualTo(1));
+            Assert.That(result.Second.TextureIndex, Is.EqualTo(0));
+            Assert.That(result.Second.NormalIndex, Is.EqualTo(0));
         });
     }
 
@@ -78,11 +78,11 @@ public class FaceParserTests
         Assert.That(result, Has.Length.EqualTo(3));
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].VertexIndex, Is.EqualTo(0));
-            Assert.That(result[0].TextureIndex, Is.EqualTo(1));
-            Assert.That(result[0].NormalIndex, Is.EqualTo(0));
+            Assert.That(result.First.VertexIndex, Is.EqualTo(0));
+            Assert.That(result.First.TextureIndex, Is.EqualTo(1));
+            Assert.That(result.First.NormalIndex, Is.EqualTo(0));
 
-            Assert.That(result[1].TextureIndex, Is.EqualTo(3));
+            Assert.That(result.Second.TextureIndex, Is.EqualTo(3));
         });
     }
 
@@ -99,11 +99,11 @@ public class FaceParserTests
         Assert.That(result, Has.Length.EqualTo(3));
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].VertexIndex, Is.EqualTo(0));
-            Assert.That(result[0].TextureIndex, Is.EqualTo(0));
-            Assert.That(result[0].NormalIndex, Is.EqualTo(1));
+            Assert.That(result.First.VertexIndex, Is.EqualTo(0));
+            Assert.That(result.First.TextureIndex, Is.EqualTo(0));
+            Assert.That(result.First.NormalIndex, Is.EqualTo(1));
 
-            Assert.That(result[1].NormalIndex, Is.EqualTo(3));
+            Assert.That(result.Second.NormalIndex, Is.EqualTo(3));
         });
     }
 
@@ -118,7 +118,7 @@ public class FaceParserTests
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(4));
-        Assert.That(result[3].VertexIndex, Is.EqualTo(9));
+        Assert.That(result.Third.VertexIndex, Is.EqualTo(9));
     }
 
     [Test]
@@ -158,7 +158,7 @@ public class FaceParserTests
 
         // Assert
         Assert.That(result, Has.Length.EqualTo(2));
-        Assert.That(result[0].TextureIndex, Is.EqualTo(0)); // abc не парсится
-        Assert.That(result[1].NormalIndex, Is.EqualTo(5));  // 6-1 = 5
+        Assert.That(result.First.TextureIndex, Is.EqualTo(0)); // abc не парсится
+        Assert.That(result.Second.NormalIndex, Is.EqualTo(5));  // 6-1 = 5
     }
 }
