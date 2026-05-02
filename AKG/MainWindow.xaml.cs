@@ -8,6 +8,7 @@ using AKG.Facade;
 using AKG.Handlers;
 using AKG.Matrix;
 using AKG.Render;
+using AKG.Render.Lighting;
 using AKG.Render.Rasterization;
 
 namespace AKG;
@@ -121,5 +122,14 @@ public partial class MainWindow : Window
     private void BtnTemp_OnClick(object sender, RoutedEventArgs e)
     {
         BarycentricCalculator.Logs = !BarycentricCalculator.Logs;
+    }
+
+    private void TextureToggled_Click(object sender, RoutedEventArgs e)
+    {
+
+        LightingCalculator.UseDiffuseMap = ChkDiffuse.IsChecked == true;
+        LightingCalculator.UseNormalMap = ChkNormal.IsChecked == true;
+        LightingCalculator.UseSpecularMap = ChkSpecular.IsChecked == true;
+        
     }
 }

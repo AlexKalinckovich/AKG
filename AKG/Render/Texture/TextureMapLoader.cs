@@ -5,9 +5,9 @@ namespace AKG.Render.Texture;
 
 public static class TextureMapLoader
 {
-    private const string DefaultDiffusePath  = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Color.png";
-    private const string DefaultNormalPath   = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_NormalGL.png";
-    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\WoodFloor071_1K-PNG_Roughness.png";
+    private const string DefaultDiffusePath  = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\african_head_diffuse.png";
+    private const string DefaultNormalPath   = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\african_head_nm.png";
+    private const string DefaultSpecularPath = @"C:\Users\brota\RiderProjects\AKG\AKG\Textures\african_head_spec.png";
 
     public static RenderTextureMaps LoadDefaultMaps()
     {

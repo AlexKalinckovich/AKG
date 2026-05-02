@@ -20,8 +20,6 @@ public static class FrustumCuller
         
         if (AreAllVerticesOutsideTop(clip0, clip1, clip2)) return false;
         
-        if (AreAllVerticesOutsideNear(clip0, clip1, clip2)) return false;
-        
         if (AreAllVerticesOutsideFar(clip0, clip1, clip2)) return false;
         
         return true;

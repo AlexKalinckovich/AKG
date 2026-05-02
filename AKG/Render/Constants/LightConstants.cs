@@ -14,7 +14,7 @@ public static class LightingConstants
     public const float Epsilon = 1e-10f;
     
     public static readonly Vector3 DefaultLightDirection = new Vector3(0, 0, 1);
-    public static readonly Vector3 DefaultLightPosition = new Vector3(15, 10, 85);
+    public static readonly Vector3 DefaultLightPosition = new Vector3(15, 10, 25);
     public static readonly Vector3 DefaultLightColor = new Vector3(1, 1, 1);
     public static readonly Vector3 DefaultAmbientLightColor = new Vector3(0.2f, 0.2f, 0.2f);
     public static readonly Vector3 DefaultSpecularColor = new Vector3(1, 1, 1);

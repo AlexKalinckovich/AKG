@@ -9,17 +9,22 @@ using AKG.Render.States;
 using AKG.Render.Texture;
 using AKG.Render.Validation;
 using System;
+using AKG.Matrix;
 
 namespace AKG.Render.Renderers;
 
 public sealed class FaceRenderer : IDisposable
 {
     private readonly TriangleRasterizer _triangleRasterizer;
+    private readonly int _viewportWidth;
+    private readonly int _viewportHeight;
 
-    public FaceRenderer(BitmapRenderer bitmapRenderer, CameraState cameraState)
+    public FaceRenderer(BitmapRenderer bitmapRenderer, CameraState cameraState, TransformationMatrixManager matrixManager)
     {
         RenderTextureMaps renderMaps = TextureMapLoader.LoadDefaultMaps();
-        _triangleRasterizer = new TriangleRasterizer(bitmapRenderer, cameraState, renderMaps);
+        _viewportWidth = bitmapRenderer.Width;
+        _viewportHeight = bitmapRenderer.Height;
+        _triangleRasterizer = new TriangleRasterizer(bitmapRenderer, cameraState, renderMaps, matrixManager);
     }
 
     public void RenderFaces(IReadOnlyList<Face> faces, ReadOnlyMemory<VertexData> vertices)
@@ -60,8 +65,13 @@ public sealed class FaceRenderer : IDisposable
         int[] offsets, 
         int faceCount)
     {
-        var partitioner = Partitioner.Create(0, faceCount, RenderConstants.PartitionBatchSize);
-        Parallel.ForEach(partitioner, range =>
+        Partitioner<Tuple<int,int>> partitioner = Partitioner.Create(0, faceCount, RenderConstants.PartitionBatchSize);
+        ParallelOptions parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount
+
+        };
+        Parallel.ForEach(partitioner, parallelOptions, range =>
         {
             ReadOnlySpan<VertexData> span = vertices.Span;
             RenderFaceRangeSequentially(faces, span, offsets, range.Item1, range.Item2);
@@ -116,7 +126,21 @@ public sealed class FaceRenderer : IDisposable
     {
         if (!TriangleValidator.IsTriangleValid(triangle))
             return;
-        ProcessFrustumCulling(triangle);
+
+        
+        if (!FaceCullingStrategy.IsTriangleVisible(triangle))
+            return;
+        
+        int clippedCount = NearPlaneClipper.Clip(triangle, _viewportWidth, _viewportHeight, out Triangle t1, out Triangle t2);
+        
+        if (clippedCount > 0 && FrustumCuller.IsTriangleInFrustum(t1))
+        {
+            RasterizeTriangle(t1);
+        }
+        if (clippedCount > 1 && FrustumCuller.IsTriangleInFrustum(t2))
+        {
+            RasterizeTriangle(t2);
+        }
     }
 
     private void ProcessFrustumCulling(Triangle triangle)

@@ -4,7 +4,7 @@ public static class RenderConstants
 {
     public const float InitialZoom = 5.0f;
     public const float MinimumZoom = 0.5f;
-    public const float MaximumZoom = 200.0f;
+    public const float MaximumZoom = 250.0f;
     
     public const float MinimumModelScale = 0.001f;
     public const float MaximumModelScale = 100.0f;

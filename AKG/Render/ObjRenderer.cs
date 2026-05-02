@@ -34,7 +34,7 @@ public sealed class ObjRenderer
         _matrixManager = new TransformationMatrixManager(_cameraState, _modelState, bitmapPixelWidth, bitmapPixelHeight);
         _vertexTransformer = new VertexTransformer(_matrixManager, bitmapPixelWidth, bitmapPixelHeight);
         _bitmapRenderer = new BitmapRenderer(bitmap);
-        _faceRenderer = new FaceRenderer(_bitmapRenderer, _cameraState);
+        _faceRenderer = new FaceRenderer(_bitmapRenderer, _cameraState, _matrixManager);
         _mouseHandler = new MouseInteractionHandler(_cameraState, _matrixManager);
     }
 

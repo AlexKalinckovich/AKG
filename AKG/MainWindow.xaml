@@ -38,7 +38,11 @@
                 <Button Name="BtnDown" Click="BtnDown_Click">↓</Button>
                 
                 <Button Name="BtnReset" Click="BtnReset_Click" Margin="10,0,0,0" MinWidth="80">Reset</Button>
-                <Button Name="BtnTemp" Click="BtnTemp_OnClick"></Button>
+                <Button Name="BtnTemp" Click="BtnTemp_OnClick">Logs</Button>
+                <TextBlock VerticalAlignment="Center" Margin="15,0,5,0">Textures:</TextBlock>
+                <CheckBox Name="ChkDiffuse" Content="Diffuse" IsChecked="True" VerticalAlignment="Center" Margin="5,0" Click="TextureToggled_Click"/>
+                <CheckBox Name="ChkNormal" Content="Normal" IsChecked="True" VerticalAlignment="Center" Margin="5,0" Click="TextureToggled_Click"/>
+                <CheckBox Name="ChkSpecular" Content="Specular" IsChecked="True" VerticalAlignment="Center" Margin="5,0" Click="TextureToggled_Click"/>
             </StackPanel>
         </WrapPanel>
         

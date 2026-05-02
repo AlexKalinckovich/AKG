@@ -34,11 +34,7 @@ public readonly struct Texture2D
     public Vector3 SampleBilinear(float u, float v)
     {
         
-        if (BarycentricCalculator.Logs && (u < 0 || u > 1 || v < 0 || v > 1))
-        {
-            Console.WriteLine($"WARNING: UV out of bounds! u={u:F6}, v={v:F6}");
-        }
-    
+        v = 1.0f - v;
         float fx = u * Width - 0.5f;
         float fy = v * Height - 0.5f;
     
@@ -63,16 +59,10 @@ public readonly struct Texture2D
         Vector3 c11 = GetPixel(x1, y1);
     
         Vector3 c0 = Vector3.Lerp(c00, c10, dx);
-        Vector3 c1 = Vector3.Lerp(c01, c11, dy);
-    
+        Vector3 c1 = Vector3.Lerp(c01, c11, dx);
+
         Vector3 result = Vector3.Lerp(c0, c1, dy);
-    
         
-        if (BarycentricCalculator.Logs && Math.Abs(u - 0.5f) < 0.01f && Math.Abs(v - 0.5f) < 0.01f)
-        {
-            Console.WriteLine($"Center sampling: u={u:F4}, v={v:F4} -> color={result}");
-        }
-    
         return result;
     }
     
